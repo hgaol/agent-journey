@@ -40,6 +40,18 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
 });
 
+test("terminal transcript fills the available center pane", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Read the greeting file.").click();
+  await page.getByTestId("terminal-replay-debugger").waitFor();
+  const pane = await page.getByLabel("Terminal session replay").boundingBox();
+  const stage = await page.locator(".terminal-stage-frame").boundingBox();
+  expect(pane).not.toBeNull();
+  expect(stage).not.toBeNull();
+  expect(stage!.height).toBeGreaterThan(pane!.height * 0.75);
+  expect(Math.abs((stage!.y + stage!.height) - (pane!.y + pane!.height))).toBeLessThan(2);
+});
+
 test("shows source consent and archive operations", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Sources" }).click();
