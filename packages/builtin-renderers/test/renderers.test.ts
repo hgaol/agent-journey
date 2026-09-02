@@ -13,12 +13,22 @@ describe("built-in Renderer Plugins", () => {
     (sourceAgent) => expect(rendererForSourceAgent(sourceAgent).manifest.targetSourceAgent).toBe(sourceAgent)
   );
 
-  it("maps Pi's built-in dark-theme hierarchy onto the terminal stage", () => {
+  it.each([
+    ["claude-code", "--stage-human:#373737", "--stage-accent:#ca7c5e"],
+    ["github-copilot-cli", "--stage-human:#0c0c0c", "--stage-accent:#80d3d5"],
+    ["pi", "--stage-human:#343540", "--stage-accent:#95bdb7"]
+  ])("uses screenshot-sampled colors and native hierarchy for %s", (sourceAgent, panel, accent) => {
+    const renderer = rendererForSourceAgent(sourceAgent);
+    expect(renderer.manifest.version).toBe("0.3.0");
+    expect(renderer.css).toContain("--stage-bg:#292c33");
+    expect(renderer.css).toContain(panel);
+    expect(renderer.css).toContain(accent);
+  });
+
+  it("keeps Pi's native reasoning and tool-state treatments", () => {
     const renderer = rendererForSourceAgent("pi");
-    expect(renderer.manifest.version).toBe("0.2.0");
-    expect(renderer.css).toContain("--stage-human:#343541");
-    expect(renderer.css).toContain("background:#283228!important");
-    expect(renderer.css).toContain("background:#3c2828!important");
+    expect(renderer.css).toContain("background:#2a3229!important");
+    expect(renderer.css).toContain("background:#392928!important");
     expect(renderer.css).toContain("--stage-expand-reasoning:1");
   });
 

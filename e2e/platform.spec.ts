@@ -1,4 +1,12 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type FrameLocator, type Page } from "@playwright/test";
+
+async function expectNativeChromeDocked(page: Page, stage: FrameLocator): Promise<void> {
+  const frameBox = await page.locator("iframe.journey-stage").boundingBox();
+  const footerBox = await stage.locator(".stage-native-footer").boundingBox();
+  expect(frameBox).not.toBeNull();
+  expect(footerBox).not.toBeNull();
+  expect(Math.abs((frameBox!.y + frameBox!.height) - (footerBox!.y + footerBox!.height))).toBeLessThan(1);
+}
 
 test("opening the Vite URL directly completes local authorization", async ({ browser }) => {
   const context = await browser.newContext();
@@ -45,32 +53,34 @@ test("Pi renderer follows its native TUI visual hierarchy", async ({ page }) => 
   await page.getByText("Read the greeting file.", { exact: true }).click();
   await page.getByLabel("Renderer").selectOption("builtin.pi");
   const stage = page.frameLocator("iframe.journey-stage");
-  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(43, 45, 50)");
+  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
   await expect(stage.locator(".brand-mark")).toBeHidden();
-  await expect(stage.locator(".stage-title")).toHaveCSS("color", "rgb(138, 190, 183)");
+  await expect(stage.locator(".stage-title")).toHaveCSS("color", "rgb(149, 189, 183)");
   await expect(stage.locator('.activity[data-kind="human-input"]').first()).toHaveCSS(
     "background-color",
-    "rgb(52, 53, 65)"
+    "rgb(52, 53, 64)"
   );
   await expect(stage.locator('.activity[data-kind="reasoning"] details').first()).toHaveAttribute("open", "");
   await expect(stage.locator('.activity[data-kind="tool-invocation"]').first()).toHaveCSS(
     "background-color",
-    "rgb(40, 50, 40)"
+    "rgb(42, 50, 41)"
   );
   await expect(stage.locator('.activity[data-kind="tool-invocation"][data-native-name="bash"]')).toHaveCSS(
     "background-color",
-    "rgb(60, 40, 40)"
+    "rgb(57, 41, 40)"
   );
   await expect(stage.locator('.activity[data-kind="tool-invocation"][data-native-name="bash"] .tool-timeout')).toHaveText(
     "(timeout 30s)"
   );
   const failedToolResult = stage.locator('.activity[data-kind="tool-result"][data-status="failed"]');
-  await expect(failedToolResult).toHaveCSS("background-color", "rgb(60, 40, 40)");
+  await expect(failedToolResult).toHaveCSS("background-color", "rgb(57, 41, 40)");
   await expect(failedToolResult.locator(".tool-duration")).toHaveText("Took 1.0s");
-  await expect(stage.locator(".markdown-heading")).toHaveCSS("color", "rgb(240, 198, 116)");
+  await expect(stage.locator(".markdown-heading")).toHaveCSS("color", "rgb(233, 200, 128)");
   await expect(stage.locator(".markdown-list-marker")).toHaveText("1.");
-  await expect(stage.locator(".markdown-list-marker")).toHaveCSS("color", "rgb(138, 190, 183)");
+  await expect(stage.locator(".markdown-list-marker")).toHaveCSS("color", "rgb(149, 189, 183)");
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
+  await expect(stage.locator(".stage-native-composer")).toHaveCSS("border-top-color", "rgb(136, 161, 187)");
+  await expectNativeChromeDocked(page, stage);
 });
 
 test("Claude Code renderer follows the native TUI visual hierarchy", async ({ page }) => {
@@ -82,13 +92,13 @@ test("Claude Code renderer follows the native TUI visual hierarchy", async ({ pa
   const artifact = stage.locator('.activity[data-kind="artifact"]').first();
   const payload = stage.locator(".activity-payload").first();
   const toolArgument = stage.locator(".tool-argument").first();
-  await expect(body).toHaveCSS("background-color", "rgb(43, 45, 50)");
-  await expect(human).toHaveCSS("background-color", "rgb(58, 58, 58)");
+  await expect(body).toHaveCSS("background-color", "rgb(41, 44, 51)");
+  await expect(human).toHaveCSS("background-color", "rgb(55, 55, 55)");
   await expect(human).toHaveCSS("border-left-width", "0px");
   await expect(artifact).toBeHidden();
   await expect(payload).toBeHidden();
   await expect(toolArgument).toHaveText("src/greeting.ts");
-  await expect(toolArgument).toHaveCSS("color", "rgb(189, 199, 255)");
+  await expect(toolArgument).toHaveCSS("color", "rgb(178, 185, 244)");
   await expect(page.locator(".terminal-native-path")).toHaveCSS("color", "rgb(141, 184, 232)");
   const assistantActivity = await stage.locator('.activity[data-kind="agent-output"]').first().boundingBox();
   const assistantMarker = await stage.locator('.activity[data-kind="agent-output"] .activity-marker').first().boundingBox();
@@ -98,27 +108,41 @@ test("Claude Code renderer follows the native TUI visual hierarchy", async ({ pa
   expect(assistantText).not.toBeNull();
   expect(assistantText!.x - assistantActivity!.x).toBeLessThan(28);
   const markerCenter = assistantMarker!.y + assistantMarker!.height / 2;
-  const textFirstLineCenter = assistantText!.y + 11.5;
+  const textFirstLineCenter = assistantText!.y + assistantText!.height / 2;
   expect(Math.abs(markerCenter - textFirstLineCenter)).toBeLessThan(2);
+  await expect(stage.locator('.activity[data-kind="reasoning"]')).toBeHidden();
+  await expect(stage.locator(".stage-native-composer")).toBeVisible();
+  await expect(stage.locator(".stage-native-footer")).toBeVisible();
+  await expectNativeChromeDocked(page, stage);
 });
 
 test("GitHub Copilot CLI renderer follows its native colorful TUI hierarchy", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Check the greeting implementation.", { exact: true }).click();
   const stage = page.frameLocator("iframe.journey-stage");
-  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(43, 45, 50)");
+  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
   await expect(stage.locator(".stage-native-tabs")).toBeVisible();
+  await expect(stage.locator(".stage-native-tabs .active")).toHaveCSS("background-color", "rgb(128, 211, 213)");
   await expect(stage.getByText("Model changed to copilot-test-model", { exact: true })).toBeVisible();
   await expect(stage.locator(".stage-head")).toBeHidden();
-  await expect(stage.locator('.activity[data-kind="human-input"]').first()).toHaveCSS(
-    "background-color",
-    "rgb(8, 9, 10)"
-  );
+  const copilotPrompt = stage.locator('.activity[data-kind="human-input"]').first();
+  await expect(copilotPrompt).toHaveCSS("background-color", "rgb(12, 12, 12)");
+  await expect(copilotPrompt.locator(".activity-time-full")).toBeHidden();
+  await expect(copilotPrompt.locator(".activity-time-clock")).toHaveText(/^\d{1,2}:\d{2}$/u);
   const shell = stage.locator('.activity[data-native-name="shell"]').first();
-  await expect(shell.locator(".activity-marker")).toHaveCSS("color", "rgb(232, 213, 107)");
-  await expect(shell.locator(".link-token")).toHaveCSS("color", "rgb(102, 208, 222)");
+  await expect(shell.locator(".activity-marker")).toHaveCSS("color", "rgb(248, 241, 174)");
+  await expect(shell.locator(".link-token")).toHaveCSS("color", "rgb(128, 211, 213)");
+  await expect(stage.locator('.activity[data-kind="agent-output"] .activity-marker').first()).toHaveCSS(
+    "color",
+    "rgb(174, 76, 163)"
+  );
+  const copilotToolResults = stage.locator('.activity[data-kind="tool-result"]');
+  await expect(copilotToolResults).toHaveCount(2);
+  await expect(copilotToolResults.first()).toBeHidden();
+  await expect(copilotToolResults.last()).toBeHidden();
   await expect(stage.locator('.activity[data-kind="context-injection"]').first()).toBeHidden();
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
+  await expectNativeChromeDocked(page, stage);
 });
 
 test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {
