@@ -1,0 +1,219 @@
+import type { ActivityDocument, InterpretationDocument, TurnDocument } from "@agentjourney/contracts";
+
+export interface ReplayFrame {
+  activityId: string;
+  threadId: string;
+  index: number;
+  sourceOrder: number;
+  observedAt?: string;
+  observedOffsetMs?: number;
+  displayOffsetMs: number;
+  timing: "evidenced" | "step";
+  deliveryChunkIndex?: number;
+  idleGapCompressed: boolean;
+}
+
+export interface InterpretationComparison {
+  unchanged: string[];
+  added: string[];
+  removed: string[];
+  reclassified: Array<{ evidenceAnchor: string; before: string; after: string }>;
+}
+
+function relationCreatesPrecedence(relation: string): boolean {
+  return ["parent", "caused-by", "result-of", "spawned-by", "replaces"].includes(relation);
+}
+
+/**
+ * Produces a deterministic display order while respecting every evidenced causal
+ * edge that can be resolved. It does not claim that tie-breaks are chronology.
+ */
+export function linearizeActivityGraph(activities: readonly ActivityDocument[]): ActivityDocument[] {
+  const byId = new Map(activities.map((activity) => [activity.id, activity]));
+  const incoming = new Map(activities.map((activity) => [activity.id, 0]));
+  const outgoing = new Map<string, string[]>();
+
+  for (const activity of activities) {
+    for (const link of activity.links ?? []) {
+      if (!relationCreatesPrecedence(link.relation) || !byId.has(link.targetActivityId)) continue;
+      incoming.set(activity.id, (incoming.get(activity.id) ?? 0) + 1);
+      const targets = outgoing.get(link.targetActivityId) ?? [];
+      targets.push(activity.id);
+      outgoing.set(link.targetActivityId, targets);
+    }
+  }
+
+  const compare = (left: ActivityDocument, right: ActivityDocument): number =>
+    left.sourceOrder - right.sourceOrder || left.threadId.localeCompare(right.threadId) || left.id.localeCompare(right.id);
+  const ready = activities.filter(({ id }) => incoming.get(id) === 0).sort(compare);
+  const result: ActivityDocument[] = [];
+
+  while (ready.length > 0) {
+    const next = ready.shift()!;
+    result.push(next);
+    for (const targetId of outgoing.get(next.id) ?? []) {
+      const remaining = (incoming.get(targetId) ?? 1) - 1;
+      incoming.set(targetId, remaining);
+      if (remaining === 0) {
+        const target = byId.get(targetId);
+        if (target) {
+          ready.push(target);
+          ready.sort(compare);
+        }
+      }
+    }
+  }
+
+  if (result.length !== activities.length) {
+    const emitted = new Set(result.map(({ id }) => id));
+    result.push(...activities.filter(({ id }) => !emitted.has(id)).sort(compare));
+  }
+  return result;
+}
+
+export function deriveTurns(activities: readonly ActivityDocument[]): TurnDocument[] {
+  const ordered = linearizeActivityGraph(activities);
+  const explicit = new Map<string, ActivityDocument[]>();
+  for (const activity of ordered) {
+    if (!activity.turnId) continue;
+    const values = explicit.get(activity.turnId) ?? [];
+    values.push(activity);
+    explicit.set(activity.turnId, values);
+  }
+
+  const turns: TurnDocument[] = [];
+  const explicitlyAssigned = new Set<string>();
+  for (const [turnId, values] of explicit) {
+    values.forEach(({ id }) => explicitlyAssigned.add(id));
+    turns.push(turnFrom(`turn:${turnId}`, values, "evidenced"));
+  }
+
+  let current: ActivityDocument[] = [];
+  let inferredIndex = 0;
+  const flush = (): void => {
+    if (current.length === 0) return;
+    turns.push(turnFrom(`inferred:${inferredIndex++}`, current, "inferred"));
+    current = [];
+  };
+  for (const activity of ordered) {
+    if (explicitlyAssigned.has(activity.id)) continue;
+    if (activity.kind === "human-input" && current.some(({ kind }) => kind === "human-input")) flush();
+    current.push(activity);
+  }
+  flush();
+
+  return turns.sort((left, right) => {
+    const leftActivity = byActivityId(ordered, left.activityIds[0]);
+    const rightActivity = byActivityId(ordered, right.activityIds[0]);
+    return (leftActivity?.sourceOrder ?? 0) - (rightActivity?.sourceOrder ?? 0);
+  });
+}
+
+function turnFrom(
+  id: string,
+  activities: readonly ActivityDocument[],
+  boundaryProvenance: "evidenced" | "inferred"
+): TurnDocument {
+  const timestamps = activities.flatMap(({ timestamp }) => (timestamp ? [timestamp] : []));
+  const startedAt = timestamps[0];
+  const endedAt = timestamps.at(-1);
+  return {
+    id,
+    activityIds: activities.map(({ id: activityId }) => activityId),
+    boundaryProvenance,
+    ...(startedAt ? { startedAt } : {}),
+    ...(endedAt ? { endedAt } : {})
+  };
+}
+
+function byActivityId(activities: readonly ActivityDocument[], id: string | undefined): ActivityDocument | undefined {
+  return id ? activities.find((activity) => activity.id === id) : undefined;
+}
+
+interface ReplayPoint {
+  activity: ActivityDocument;
+  activityIndex: number;
+  observedAt: string | undefined;
+  offsetMs?: number | undefined;
+  deliveryChunkIndex?: number | undefined;
+}
+
+export function deriveReplayFrames(
+  activities: readonly ActivityDocument[],
+  maximumDisplayedIdleMs = 5_000,
+  stepMs = 700
+): ReplayFrame[] {
+  const ordered = linearizeActivityGraph(activities);
+  const points: ReplayPoint[] = ordered.flatMap((activity, activityIndex) => {
+    if (!activity.deliveryTrace?.length) {
+      return [{ activity, activityIndex, observedAt: activity.timestamp }];
+    }
+    return activity.deliveryTrace.map((chunk, deliveryChunkIndex) => ({
+      activity,
+      activityIndex,
+      deliveryChunkIndex,
+      observedAt: chunk.timestamp ?? activity.timestamp,
+      offsetMs: chunk.offsetMs
+    }));
+  });
+  const observedTimes = points.map(({ observedAt, offsetMs }) => {
+    if (observedAt) return Date.parse(observedAt);
+    return offsetMs === undefined ? Number.NaN : offsetMs;
+  });
+  const firstObserved = observedTimes.find(Number.isFinite);
+  let displayOffsetMs = 0;
+  let previousObserved: number | undefined;
+
+  return points.map((point, frameIndex) => {
+    const observed = observedTimes[frameIndex];
+    const hasObserved = Number.isFinite(observed);
+    let idleGapCompressed = false;
+    if (frameIndex > 0) {
+      if (hasObserved && previousObserved !== undefined) {
+        const gap = Math.max(0, observed! - previousObserved);
+        idleGapCompressed = gap > maximumDisplayedIdleMs;
+        displayOffsetMs += Math.min(gap, maximumDisplayedIdleMs);
+      } else {
+        displayOffsetMs += stepMs;
+      }
+    }
+    if (hasObserved) previousObserved = observed;
+    return {
+      activityId: point.activity.id,
+      threadId: point.activity.threadId,
+      index: point.activityIndex,
+      sourceOrder: point.activity.sourceOrder,
+      ...(point.deliveryChunkIndex !== undefined ? { deliveryChunkIndex: point.deliveryChunkIndex } : {}),
+      ...(hasObserved
+        ? {
+            ...(point.observedAt ? { observedAt: point.observedAt } : {}),
+            observedOffsetMs: observed! - (firstObserved ?? observed!)
+          }
+        : {}),
+      displayOffsetMs,
+      timing: hasObserved ? "evidenced" : "step",
+      idleGapCompressed
+    };
+  });
+}
+
+export function compareInterpretations(
+  before: InterpretationDocument,
+  after: InterpretationDocument
+): InterpretationComparison {
+  const beforeByAnchor = new Map(before.activities.map((activity) => [activity.evidenceAnchor, activity]));
+  const afterByAnchor = new Map(after.activities.map((activity) => [activity.evidenceAnchor, activity]));
+  const unchanged: string[] = [];
+  const added: string[] = [];
+  const removed: string[] = [];
+  const reclassified: InterpretationComparison["reclassified"] = [];
+
+  for (const [anchor, activity] of beforeByAnchor) {
+    const next = afterByAnchor.get(anchor);
+    if (!next) removed.push(anchor);
+    else if (next.kind !== activity.kind) reclassified.push({ evidenceAnchor: anchor, before: activity.kind, after: next.kind });
+    else unchanged.push(anchor);
+  }
+  for (const anchor of afterByAnchor.keys()) if (!beforeByAnchor.has(anchor)) added.push(anchor);
+  return { unchanged, added, removed, reclassified };
+}

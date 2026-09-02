@@ -1,0 +1,2 @@
+{"timestamp":"2026-01-01T10:00:04.100Z","type":"session_meta","payload":{"id":"55555555-5555-4555-8555-555555555555","parent_thread_id":"22222222-2222-4222-8222-222222222222","timestamp":"2026-01-01T10:00:04.100Z","cwd":"/workspace/acme","cli_version":"0.100.0","model_provider":"openai"}}
+{"timestamp":"2026-01-01T10:00:04.200Z","type":"event_msg","payload":{"type":"agent_message","message":"Subagent checked the test setup."}}

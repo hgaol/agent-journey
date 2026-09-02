@@ -1,0 +1,3 @@
+# Stabilize a semantic core of Activity kinds
+
+The initial implementation normalizes source histories into Human Input, Context Injection, Agent Output, Reasoning, Tool Invocation, Tool Result, Approval Request, Approval Decision, State Transition, Usage Observation, Artifact, Diagnostic, and Unclassified Activity. Commands, reads, searches, and edits specialize tool interactions rather than becoming competing top-level kinds. Tool Invocations preserve native names and source-specific detail while gaining only conservative, non-exclusive Tool Capabilities for cross-agent use. This compact semantic core enables cross-agent rendering and search without forcing every agent's transient UI blocks into the shared vocabulary.

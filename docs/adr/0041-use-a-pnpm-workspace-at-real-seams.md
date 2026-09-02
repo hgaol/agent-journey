@@ -1,0 +1,3 @@
+# Use a pnpm workspace with packages only at real seams
+
+AgentJourney uses a pnpm workspace with host and web applications plus packages for versioned plugin contracts, the plugin SDK, the deep Archive module, built-in Source Adapters, built-in Renderers, and sanitized test fixtures. Built-ins cross the same interfaces as third-party plugins. Ordinary internal helpers remain inside their owning module instead of becoming shallow packages. This adds workspace coordination but makes the genuine multi-adapter and multi-renderer seams executable and testable without fragmenting the codebase indiscriminately.

@@ -1,0 +1,3 @@
+# Version and negotiate plugin interfaces explicitly
+
+Renderer and Source Adapter manifests declare semantic-version ranges for their purpose-built document interfaces. Minor interface releases are additive, breaking meaning requires a new major, and the host validates compatibility before execution; incompatible plugins are disabled with a clear Diagnostic rather than run best-effort. AgentJourney supports the current and immediately previous major during a documented migration window. This imposes compatibility and translation costs, but prevents silent plugin corruption while allowing internal archive implementation to evolve independently.

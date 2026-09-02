@@ -1,0 +1,3 @@
+# Keep mutable Review Overlays separate from Journey evidence
+
+AgentJourney permits user-authored display titles, tags, Project assignments, Activity bookmarks, reviewer notes, and saved presentation preferences through a Review Overlay. The overlay remains distinguishable from agent-produced content and never modifies Source Evidence or Canonical Activity; individual source Activities cannot be edited or selectively deleted. This enables useful organization and review while preserving forensic integrity, at the cost of maintaining overlay references as Journey revisions and interpretations evolve.

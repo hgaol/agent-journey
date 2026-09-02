@@ -1,0 +1,28 @@
+{
+  "name": "@agentjourney/host",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "build": "tsup src/main.ts --format esm --platform node --out-dir dist --clean",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+  },
+  "dependencies": {
+    "@agentjourney/activity-graph": "workspace:*",
+    "@agentjourney/archive": "workspace:*",
+    "@agentjourney/builtin-adapters": "workspace:*",
+    "@agentjourney/builtin-renderers": "workspace:*",
+    "@agentjourney/plugin-runtime": "workspace:*",
+    "@agentjourney/plugin-sdk": "workspace:*",
+    "@agentjourney/portability": "workspace:*",
+    "@fastify/cookie": "^11.1.2",
+    "fastify": "^5.12.1",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@agentjourney/test-fixtures": "workspace:*",
+    "tsup": "^8.5.0"
+  }
+}

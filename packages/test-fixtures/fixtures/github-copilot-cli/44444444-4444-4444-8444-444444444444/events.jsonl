@@ -1,0 +1,19 @@
+{"type":"session.start","timestamp":"2026-01-01T10:00:00.000Z","data":{"sessionId":"44444444-4444-4444-8444-444444444444","copilotVersion":"1.0.0","startTime":"2026-01-01T10:00:00.000Z","context":{"cwd":"/workspace/acme","branch":"main"}}}
+{"type":"session.resume","timestamp":"2026-01-01T10:00:00.250Z","data":{"resumeTime":"2026-01-01T10:00:00.250Z","eventCount":1,"selectedModel":"copilot-test-model","reasoningEffort":"medium"}}
+{"type":"session.model_change","timestamp":"2026-01-01T10:00:00.500Z","data":{"newModel":"copilot-test-model","reasoningEffort":"medium"}}
+{"type":"system.message","timestamp":"2026-01-01T10:00:00.750Z","data":{"role":"system","content":"Follow repository instructions."}}
+{"type":"user.message","timestamp":"2026-01-01T10:00:01.000Z","data":{"content":"Check the greeting implementation.","interactionId":"interaction-1"}}
+{"type":"assistant.turn_start","timestamp":"2026-01-01T10:00:01.500Z","data":{"turnId":"turn-1","interactionId":"interaction-1"}}
+{"type":"assistant.message","timestamp":"2026-01-01T10:00:02.000Z","data":{"messageId":"message-1","model":"copilot-test-model","reasoningText":"I should inspect the file.","content":"I will read it.","turnId":"turn-1"}}
+{"type":"tool.execution_start","timestamp":"2026-01-01T10:00:03.000Z","data":{"toolCallId":"tool-g-1","toolName":"view","arguments":{"path":"src/greeting.ts"},"turnId":"turn-1"}}
+{"type":"hook.start","timestamp":"2026-01-01T10:00:03.100Z","data":{"hookInvocationId":"hook-1","hookType":"preToolUse","input":{}}}
+{"type":"hook.end","timestamp":"2026-01-01T10:00:03.200Z","data":{"hookInvocationId":"hook-1","hookType":"preToolUse","success":true}}
+{"type":"tool.execution_complete","timestamp":"2026-01-01T10:00:04.000Z","data":{"toolCallId":"tool-g-1","turnId":"turn-1","success":true,"result":"export const greeting = 'hello';"}}
+{"type":"permission.requested","timestamp":"2026-01-01T10:00:04.500Z","data":{"requestId":"permission-1","promptRequest":"Allow the test command?"}}
+{"type":"permission.completed","timestamp":"2026-01-01T10:00:05.000Z","data":{"requestId":"permission-1","toolCallId":"tool-g-2","result":"approved"}}
+{"type":"assistant.message","timestamp":"2026-01-01T10:00:06.000Z","data":{"messageId":"message-2","model":"copilot-test-model","content":"The implementation is correct.","turnId":"turn-1"}}
+{"type":"subagent.started","timestamp":"2026-01-01T10:00:06.500Z","data":{"toolCallId":"subagent-g-1","agentName":"explore","agentDisplayName":"Explore","model":"copilot-test-model"}}
+{"type":"assistant.message","timestamp":"2026-01-01T10:00:06.600Z","data":{"messageId":"sub-message-1","model":"copilot-test-model","content":"Subagent inspected related files.","turnId":"turn-sub-1","parentToolCallId":"subagent-g-1"}}
+{"type":"subagent.completed","timestamp":"2026-01-01T10:00:06.700Z","data":{"toolCallId":"subagent-g-1","agentName":"explore","agentDisplayName":"Explore","model":"copilot-test-model","totalToolCalls":0,"totalTokens":10,"durationMs":100}}
+{"type":"assistant.turn_end","timestamp":"2026-01-01T10:00:07.000Z","data":{"turnId":"turn-1"}}
+{"type":"session.shutdown","timestamp":"2026-01-01T10:00:08.000Z","data":{"shutdownType":"normal","totalPremiumRequests":1,"tokenDetails":{"input":100,"output":25}}}

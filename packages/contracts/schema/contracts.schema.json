@@ -1,0 +1,698 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentjourney.local/schemas/contracts/1.0.0",
+  "title": "ContractDocuments",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["interpretation", "stage"],
+  "properties": {
+    "interpretation": { "$ref": "#/$defs/InterpretationDocument" },
+    "stage": { "$ref": "#/$defs/StageDocument" },
+    "journeySummary": { "$ref": "#/$defs/JourneySummaryDocument" },
+    "journeyDetail": { "$ref": "#/$defs/JourneyDetailDocument" },
+    "sourceStatus": { "$ref": "#/$defs/SourceStatusDocument" },
+    "discoveredJourney": { "$ref": "#/$defs/DiscoveredJourneyDocument" },
+    "captureResult": { "$ref": "#/$defs/CaptureCommitResultDocument" },
+    "searchHit": { "$ref": "#/$defs/SearchHitDocument" },
+    "revisionSummary": { "$ref": "#/$defs/RevisionSummaryDocument" },
+    "interpretationSummary": { "$ref": "#/$defs/InterpretationSummaryDocument" },
+    "project": { "$ref": "#/$defs/ProjectDocument" },
+    "reviewOverlay": { "$ref": "#/$defs/ReviewOverlayDocument" },
+    "pendingEvidence": { "$ref": "#/$defs/PendingEvidenceDocument" },
+    "evidenceSearchHit": { "$ref": "#/$defs/EvidenceSearchHitDocument" },
+    "archiveVerification": { "$ref": "#/$defs/ArchiveVerificationDocument" },
+    "sensitiveFinding": { "$ref": "#/$defs/SensitiveFindingDocument" },
+    "pluginPackage": { "$ref": "#/$defs/PluginPackageDocument" },
+    "journeyPackageManifest": { "$ref": "#/$defs/JourneyPackageManifestDocument" },
+    "rendererIntent": { "$ref": "#/$defs/RendererIntentDocument" },
+    "rendererTree": { "$ref": "#/$defs/RendererTreeDocument" }
+  },
+  "$defs": {
+    "SourceAgentId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9][a-z0-9._-]*$"
+    },
+    "ActivityKind": {
+      "type": "string",
+      "enum": [
+        "human-input",
+        "context-injection",
+        "agent-output",
+        "reasoning",
+        "tool-invocation",
+        "tool-result",
+        "approval-request",
+        "approval-decision",
+        "state-transition",
+        "usage-observation",
+        "artifact",
+        "diagnostic",
+        "unclassified"
+      ]
+    },
+    "JsonValue": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "boolean" },
+        { "type": "number" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/JsonValue" }
+        },
+        {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/JsonValue" }
+        }
+      ]
+    },
+    "ActivityLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relation", "targetActivityId"],
+      "properties": {
+        "relation": {
+          "type": "string",
+          "enum": ["parent", "caused-by", "result-of", "spawned-by", "returned-to", "replaces", "related"]
+        },
+        "targetActivityId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "DeliveryChunk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "text"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 0 },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "offsetMs": { "type": "number", "minimum": 0 }
+      }
+    },
+    "ActivityDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "evidenceAnchor", "threadId", "sourceOrder"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "$ref": "#/$defs/ActivityKind" },
+        "evidenceAnchor": { "type": "string", "minLength": 1 },
+        "threadId": { "type": "string", "minLength": 1 },
+        "sourceOrder": { "type": "integer", "minimum": 0 },
+        "turnId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "actor": { "type": "string", "enum": ["human", "agent", "system", "tool", "unknown"] },
+        "text": { "type": "string" },
+        "nativeName": { "type": "string" },
+        "toolCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["shell", "file-read", "file-edit", "search", "web", "delegation", "interaction", "custom"]
+          }
+        },
+        "status": { "type": "string", "enum": ["pending", "running", "succeeded", "failed", "cancelled", "unknown"] },
+        "payload": { "$ref": "#/$defs/JsonValue" },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ActivityLink" }
+        },
+        "deliveryTrace": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/DeliveryChunk" }
+        },
+        "sourceExtensions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/JsonValue" }
+        }
+      }
+    },
+    "TurnDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "activityIds", "boundaryProvenance"],
+      "properties": {
+        "id": { "type": "string" },
+        "activityIds": { "type": "array", "items": { "type": "string" } },
+        "boundaryProvenance": { "type": "string", "enum": ["evidenced", "inferred"] },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ReviewAnnotationDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceAnchor", "bookmarked"],
+      "properties": {
+        "evidenceAnchor": { "type": "string" },
+        "bookmarked": { "type": "boolean" },
+        "note": { "type": "string" },
+        "resolved": { "type": "boolean" }
+      }
+    },
+    "AgentThreadDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "parentThreadId": { "type": "string" },
+        "spawnActivityId": { "type": "string" },
+        "returnActivityId": { "type": "string" },
+        "label": { "type": "string" },
+        "model": { "type": "string" }
+      }
+    },
+    "EvidenceDispositionDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceAnchor", "disposition"],
+      "properties": {
+        "evidenceAnchor": { "type": "string", "minLength": 1 },
+        "disposition": {
+          "type": "string",
+          "enum": ["canonical", "metadata", "transport", "duplicate", "unclassified", "malformed"]
+        },
+        "activityIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "detail": { "type": "string" }
+      }
+    },
+    "CoverageReportDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRecordCount", "dispositions", "missing"],
+      "properties": {
+        "sourceRecordCount": { "type": "integer", "minimum": 0 },
+        "dispositions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/EvidenceDispositionDocument" }
+        },
+        "missing": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "FidelityManifestDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contentKinds", "timedKinds", "deliveryTraces", "agentThreads", "causalLinks", "terminalStream", "knownGaps"],
+      "properties": {
+        "contentKinds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/ActivityKind" }
+        },
+        "timedKinds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/ActivityKind" }
+        },
+        "deliveryTraces": { "type": "boolean" },
+        "agentThreads": { "type": "boolean" },
+        "causalLinks": { "type": "boolean" },
+        "terminalStream": { "type": "boolean" },
+        "knownGaps": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "InterpretationDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "adapter", "journey", "activities", "threads", "coverage", "fidelity"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "version"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1 },
+            "version": { "type": "string", "minLength": 1 }
+          }
+        },
+        "journey": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceAgent", "nativeSessionId"],
+          "properties": {
+            "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+            "nativeSessionId": { "type": "string", "minLength": 1 },
+            "parentNativeSessionId": { "type": "string" },
+            "title": { "type": "string" },
+            "workspace": { "type": "string" },
+            "gitBranch": { "type": "string" },
+            "sourceAgentVersion": { "type": "string" },
+            "modelProvider": { "type": "string" },
+            "models": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string" }
+            },
+            "startedAt": { "type": "string", "format": "date-time" },
+            "endedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "activities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ActivityDocument" }
+        },
+        "threads": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AgentThreadDocument" }
+        },
+        "coverage": { "$ref": "#/$defs/CoverageReportDocument" },
+        "fidelity": { "$ref": "#/$defs/FidelityManifestDocument" },
+        "sourceExtensions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/JsonValue" }
+        }
+      }
+    },
+    "SensitiveFindingDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "scope", "kind", "start", "length"],
+      "properties": {
+        "id": { "type": "string" },
+        "scope": { "type": "string", "enum": ["activity-text", "activity-payload", "source-file"] },
+        "kind": { "type": "string" },
+        "activityId": { "type": "string" },
+        "relativePath": { "type": "string" },
+        "start": { "type": "integer", "minimum": 0 },
+        "length": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "RevisionSummaryDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceFingerprint", "capturedAt", "currentInterpretationId", "fileCount", "interpretationCount"],
+      "properties": {
+        "id": { "type": "string" },
+        "sourceFingerprint": { "type": "string" },
+        "capturedAt": { "type": "string", "format": "date-time" },
+        "currentInterpretationId": { "type": "string" },
+        "fileCount": { "type": "integer", "minimum": 0 },
+        "interpretationCount": { "type": "integer", "minimum": 0 },
+        "observationCount": { "type": "integer", "minimum": 0 },
+        "identityConflict": { "type": "boolean" },
+        "sourceProvenance": { "type": "object", "additionalProperties": { "$ref": "#/$defs/JsonValue" } }
+      }
+    },
+    "InterpretationSummaryDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "adapterId", "adapterVersion", "schemaVersion", "provenance", "createdAt", "activityCount", "unclassifiedCount", "malformedCount"],
+      "properties": {
+        "id": { "type": "string" },
+        "adapterId": { "type": "string" },
+        "adapterVersion": { "type": "string" },
+        "schemaVersion": { "type": "string" },
+        "provenance": { "type": "string", "enum": ["local", "external"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "activityCount": { "type": "integer", "minimum": 0 },
+        "unclassifiedCount": { "type": "integer", "minimum": 0 },
+        "malformedCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ProjectDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "journeyCount", "createdAt", "updatedAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "minLength": 1 },
+        "journeyCount": { "type": "integer", "minimum": 0 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ReviewOverlayDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["journeyId", "tags", "annotations", "updatedAt"],
+      "properties": {
+        "journeyId": { "type": "string" },
+        "displayTitle": { "type": "string" },
+        "projectId": { "type": "string" },
+        "rendererId": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "annotations": { "type": "array", "items": { "$ref": "#/$defs/ReviewAnnotationDocument" } },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "PendingEvidenceDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceAgent", "nativeSessionId", "adapterId", "adapterVersion", "error", "createdAt", "fileCount"],
+      "properties": {
+        "id": { "type": "string" },
+        "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "nativeSessionId": { "type": "string" },
+        "adapterId": { "type": "string" },
+        "adapterVersion": { "type": "string" },
+        "error": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "fileCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "EvidenceSearchHitDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relativePath", "line", "column", "text", "redacted"],
+      "properties": {
+        "relativePath": { "type": "string" },
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 },
+        "text": { "type": "string" },
+        "redacted": { "type": "boolean" }
+      }
+    },
+    "ArchiveIssueDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "message"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["missing-object", "corrupt-object", "orphan-object", "invalid-interpretation", "orphan-index", "permission"] },
+        "message": { "type": "string" },
+        "objectHash": { "type": "string" },
+        "journeyId": { "type": "string" }
+      }
+    },
+    "ArchiveVerificationDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkedObjects", "checkedInterpretations", "issues"],
+      "properties": {
+        "checkedObjects": { "type": "integer", "minimum": 0 },
+        "checkedInterpretations": { "type": "integer", "minimum": 0 },
+        "issues": { "type": "array", "items": { "$ref": "#/$defs/ArchiveIssueDocument" } }
+      }
+    },
+    "RendererTreeNodeDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag"],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "enum": ["div", "main", "section", "article", "header", "footer", "h1", "h2", "h3", "h4", "p", "span", "pre", "code", "details", "summary", "ul", "ol", "li", "button", "img"]
+        },
+        "className": { "type": "string", "maxLength": 256 },
+        "text": { "type": "string", "maxLength": 2000000 },
+        "title": { "type": "string", "maxLength": 1000 },
+        "assetPath": { "type": "string", "maxLength": 500 },
+        "intent": { "$ref": "#/$defs/RendererIntentDocument" },
+        "children": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": { "$ref": "#/$defs/RendererTreeNodeDocument" }
+        }
+      }
+    },
+    "RendererTreeDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root"],
+      "properties": {
+        "root": { "$ref": "#/$defs/RendererTreeNodeDocument" }
+      }
+    },
+    "RendererIntentDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "activityId"],
+      "properties": {
+        "type": { "type": "string", "enum": ["seek-activity", "open-evidence", "copy-content", "annotate-activity"] },
+        "activityId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "RendererPluginManifestDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "displayName", "interfaceVersion", "kind"],
+      "properties": {
+        "type": { "const": "renderer" },
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "version": { "type": "string" },
+        "displayName": { "type": "string" },
+        "interfaceVersion": { "type": "string" },
+        "kind": { "type": "string", "enum": ["style-pack", "renderer"] },
+        "targetSourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "targetAgentVersions": { "type": "string" }
+      }
+    },
+    "SourceAdapterPluginManifestDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "version", "displayName", "interfaceVersion", "sourceAgent", "defaultRootSegments", "discovery"],
+      "properties": {
+        "type": { "const": "source-adapter" },
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "version": { "type": "string" },
+        "displayName": { "type": "string" },
+        "interfaceVersion": { "type": "string" },
+        "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "defaultRootSegments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["posix", "windows"],
+          "properties": {
+            "posix": { "type": "array", "items": { "type": "string" } },
+            "windows": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "discovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["include"],
+          "properties": {
+            "include": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "PluginAssetDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "mediaType", "base64"],
+      "properties": {
+        "path": { "type": "string" },
+        "mediaType": { "type": "string" },
+        "base64": { "type": "string" }
+      }
+    },
+    "PluginPackageDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatVersion", "manifest", "integrity"],
+      "properties": {
+        "formatVersion": { "const": 1 },
+        "manifest": {
+          "oneOf": [
+            { "$ref": "#/$defs/RendererPluginManifestDocument" },
+            { "$ref": "#/$defs/SourceAdapterPluginManifestDocument" }
+          ]
+        },
+        "css": { "type": "string" },
+        "javascript": { "type": "string" },
+        "assets": { "type": "array", "items": { "$ref": "#/$defs/PluginAssetDocument" } },
+        "integrity": { "type": "string", "pattern": "^sha256-[A-Za-z0-9_-]+$" }
+      }
+    },
+    "JourneyPackageFileDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "size": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "JourneyPackageManifestDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formatVersion", "createdAt", "journeyIds", "files"],
+      "properties": {
+        "formatVersion": { "const": 1 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "journeyIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "files": { "type": "array", "items": { "$ref": "#/$defs/JourneyPackageFileDocument" } },
+        "rendererReferences": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "JourneySummaryDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sourceAgent", "nativeSessionId", "updatedAt", "latestRevisionId", "activityCount", "unclassifiedCount", "tags"],
+      "properties": {
+        "id": { "type": "string" },
+        "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "nativeSessionId": { "type": "string" },
+        "title": { "type": "string" },
+        "workspace": { "type": "string" },
+        "sourceAgentVersion": { "type": "string" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "latestRevisionId": { "type": "string" },
+        "activityCount": { "type": "integer", "minimum": 0 },
+        "unclassifiedCount": { "type": "integer", "minimum": 0 },
+        "parentJourneyId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "projectName": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "SourceFileSummaryDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relativePath", "hash", "size"],
+      "properties": {
+        "relativePath": { "type": "string" },
+        "hash": { "type": "string" },
+        "size": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "JourneyDetailDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "revisionId", "interpretationId", "interpretation", "stage", "sourceFiles", "revisions", "interpretations", "overlay", "sensitiveFindings"],
+      "properties": {
+        "summary": { "$ref": "#/$defs/JourneySummaryDocument" },
+        "revisionId": { "type": "string" },
+        "interpretationId": { "type": "string" },
+        "interpretation": { "$ref": "#/$defs/InterpretationDocument" },
+        "stage": { "$ref": "#/$defs/StageDocument" },
+        "sourceFiles": { "type": "array", "items": { "$ref": "#/$defs/SourceFileSummaryDocument" } },
+        "revisions": { "type": "array", "items": { "$ref": "#/$defs/RevisionSummaryDocument" } },
+        "interpretations": { "type": "array", "items": { "$ref": "#/$defs/InterpretationSummaryDocument" } },
+        "overlay": { "$ref": "#/$defs/ReviewOverlayDocument" },
+        "sensitiveFindings": { "type": "array", "items": { "$ref": "#/$defs/SensitiveFindingDocument" } }
+      }
+    },
+    "SourceStatusDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceAgent", "displayName", "adapterId", "adapterVersion", "suggestedRoot", "available", "approved", "scanPolicy"],
+      "properties": {
+        "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "displayName": { "type": "string" },
+        "adapterId": { "type": "string" },
+        "adapterVersion": { "type": "string" },
+        "suggestedRoot": { "type": "string" },
+        "available": { "type": "boolean" },
+        "approved": { "type": "boolean" },
+        "approvedRoot": { "type": "string" },
+        "scanPolicy": { "type": "string", "enum": ["manual", "automatic"] }
+      }
+    },
+    "DiscoveredJourneyDocument": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["sourceAgent", "nativeSessionId", "relativePaths", "locator"],
+      "properties": {
+        "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "nativeSessionId": { "type": "string" },
+        "relativePaths": { "type": "array", "items": { "type": "string" } },
+        "title": { "type": "string" },
+        "workspace": { "type": "string" },
+        "sourceAgentVersion": { "type": "string" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "byteSize": { "type": "integer", "minimum": 0 },
+        "locator": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "CaptureCommitResultDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["journeyId", "revisionId", "interpretationId", "newJourney", "newRevision", "newInterpretation"],
+      "properties": {
+        "journeyId": { "type": "string" },
+        "revisionId": { "type": "string" },
+        "interpretationId": { "type": "string" },
+        "newJourney": { "type": "boolean" },
+        "newRevision": { "type": "boolean" },
+        "newInterpretation": { "type": "boolean" }
+      }
+    },
+    "SearchHitDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["journeyId", "revisionId", "interpretationId", "activityId", "sourceAgent", "kind", "text", "evidenceAnchor"],
+      "properties": {
+        "journeyId": { "type": "string" },
+        "revisionId": { "type": "string" },
+        "interpretationId": { "type": "string" },
+        "activityId": { "type": "string" },
+        "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "title": { "type": "string" },
+        "kind": { "$ref": "#/$defs/ActivityKind" },
+        "text": { "type": "string" },
+        "evidenceAnchor": { "type": "string" }
+      }
+    },
+    "StageDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "journeyId", "revisionId", "interpretationId", "sourceAgent", "activities", "threads", "turns", "annotations", "fidelity", "coverageSummary", "sensitiveFindingCount", "presentation"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "journeyId": { "type": "string", "minLength": 1 },
+        "revisionId": { "type": "string", "minLength": 1 },
+        "interpretationId": { "type": "string", "minLength": 1 },
+        "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
+        "sourceAgentVersion": { "type": "string" },
+        "title": { "type": "string" },
+        "activities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ActivityDocument" }
+        },
+        "threads": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/AgentThreadDocument" }
+        },
+        "turns": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TurnDocument" }
+        },
+        "annotations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ReviewAnnotationDocument" }
+        },
+        "fidelity": { "$ref": "#/$defs/FidelityManifestDocument" },
+        "sensitiveFindingCount": { "type": "integer", "minimum": 0 },
+        "coverageSummary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceRecords", "canonicalActivities", "unclassified", "malformed"],
+          "properties": {
+            "sourceRecords": { "type": "integer", "minimum": 0 },
+            "canonicalActivities": { "type": "integer", "minimum": 0 },
+            "unclassified": { "type": "integer", "minimum": 0 },
+            "malformed": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "presentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["redacted", "view"],
+          "properties": {
+            "redacted": { "type": "boolean" },
+            "view": { "type": "string", "enum": ["review", "replay"] },
+            "playheadActivityId": { "type": "string" },
+            "playheadDeliveryChunk": { "type": "integer", "minimum": 0 },
+            "searchQuery": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

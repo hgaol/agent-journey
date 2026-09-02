@@ -1,0 +1,3 @@
+# Separate Journey Packages from Presentation Exports
+
+AgentJourney exports evidence and presentation through distinct concepts. A Journey Package is lossless, checksummed, identity-preserving, data-only, and re-importable, containing selected Source Evidence, revisions, Interpretations, metadata, and Review Overlays but never executable plugins; because it is unencrypted and may contain secrets, creation carries an explicit warning. Plugin identifiers, versions, and hashes may be referenced, but installation remains a separate explicit trust action. A Presentation Export is derived, non-authoritative, rendered through a selected renderer, and redacted by default. This prevents a convenient share artifact from being mistaken for complete forensic evidence.

@@ -1,0 +1,20 @@
+{
+  "name": "@agentjourney/builtin-adapters",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@agentjourney/contracts": "workspace:*",
+    "@agentjourney/plugin-sdk": "workspace:*",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@agentjourney/test-fixtures": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+  }
+}

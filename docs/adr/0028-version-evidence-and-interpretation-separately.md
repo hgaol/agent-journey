@@ -1,0 +1,3 @@
+# Version source evidence and interpretations separately
+
+A Journey Revision identifies one exact source state, while each Interpretation identifies a versioned derivation of Canonical Activity from that revision by a particular adapter and canonical schema. Source changes create revisions; adapter or schema changes create new Interpretations, with the newest valid one shown by default and prior versions retained for comparison and durable references. This adds another version axis, but distinguishes what the agent recorded from what AgentJourney later understood and prevents adapter upgrades from falsifying evidence history.

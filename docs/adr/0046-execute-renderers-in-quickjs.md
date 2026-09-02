@@ -1,0 +1,3 @@
+# Execute Renderer Plugins in QuickJS and render declarative trees
+
+Executable Renderer Plugins run in the capability-free QuickJS sandbox and receive only the projected Stage Document. They return a JSON Schema-validated declarative tree containing a restricted tag set, text, package-local raster asset references, and typed intents; AgentJourney's trusted runtime creates that tree inside an opaque-origin iframe. This is less expressive than arbitrary iframe DOM code, but closes iframe self-navigation exfiltration while retaining JavaScript/TypeScript-driven layouts, CSS isolation, and complex source-native composition.

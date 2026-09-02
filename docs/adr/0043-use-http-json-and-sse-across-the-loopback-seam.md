@@ -1,0 +1,3 @@
+# Use HTTP JSON and SSE across the loopback seam
+
+The browser and local host module communicate through versioned HTTP/JSON resources and commands, with Server-Sent Events for Capture Cycle progress and archive-change notifications, cursor pagination for large results, and generated TypeScript clients from shared schemas. WebSockets are deferred until bidirectional streaming is demonstrated, and GraphQL or tRPC do not couple browser callers to host implementation. Fastify may serve as a transport adapter, but domain and archive modules remain unaware of HTTP. This keeps the interface inspectable and testable while accepting explicit schemas and client generation.

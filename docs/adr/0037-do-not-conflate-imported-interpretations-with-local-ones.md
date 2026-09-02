@@ -1,0 +1,3 @@
+# Preserve provenance of imported Interpretations
+
+A Journey Package's Source Bundles are checksum-verified, while each included Interpretation retains Interpretation Provenance identifying its producer, adapter, schema, and external validation status. Structurally valid external Interpretations remain viewable but are not labeled locally verified; when a compatible local Source Adapter is available, AgentJourney may create a separate local Interpretation from the same evidence rather than replacing the imported one. This preserves package portability without allowing derived data to masquerade as evidence or local interpretation.

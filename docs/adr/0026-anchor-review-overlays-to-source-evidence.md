@@ -1,0 +1,3 @@
+# Anchor Review Overlays to Source Evidence
+
+Review Overlay entries target stable Evidence Anchors derived from native record identities or exact source coordinates rather than Activity array indexes or rendered positions. An evidenced occurrence retains its anchor across Journey Revisions and adapter rebuilds, with named sub-anchors when one source record yields several Activities; an anchor that can no longer be resolved becomes visibly orphaned instead of being guessed. This makes adapter interfaces and source coordinates more demanding, but prevents reviewer notes from silently moving to unrelated content.

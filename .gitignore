@@ -1,0 +1,15 @@
+node_modules/
+dist/
+!examples/plugins/**/dist/
+!examples/plugins/**/dist/**
+coverage/
+test-results/
+playwright-report/
+.vite/
+*.tsbuildinfo
+.agentjourney/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

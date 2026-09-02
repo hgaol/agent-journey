@@ -1,0 +1,3 @@
+# Use TypeScript and Node for the local host module
+
+AgentJourney uses TypeScript across the local host module, browser UI, SDKs, and plugin tooling on a pinned Node.js LTS runtime. Platform-sensitive filesystem, watcher, path, locking, and storage behavior sits behind deep modules and is verified on macOS, Linux, native Windows, and WSL. The project currently runs from source through pnpm; installer and runtime-bundling decisions are deliberately deferred. Third-party adapters never execute directly in Node. This keeps one accessible language and shared schemas across most of the platform, while accepting the need to avoid fragile native dependencies and provide a separate genuine sandbox runtime.

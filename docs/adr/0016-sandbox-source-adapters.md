@@ -1,0 +1,3 @@
+# Sandbox Source Adapter Plugins
+
+Source Adapter Plugins run in capability-limited workers rather than as arbitrary host extensions. They receive read-only virtual access only to granted Source Roots, cannot use the network, spawn processes, inspect environment variables, or traverse the wider filesystem, and return structured output that AgentJourney validates; the host alone creates Source Bundles. Specialized operations such as read-only SQLite access require explicit capabilities, while resource limits and cancellation contain malformed adapters. This adds host APIs and isolation overhead but keeps adapter extensibility compatible with Local Custody.

@@ -1,0 +1,2 @@
+{"type":"user","sessionId":"11111111-1111-4111-8111-111111111111","uuid":"sub-user-1","timestamp":"2026-01-01T10:00:01.100Z","cwd":"/workspace/acme","version":"2.1.0","message":{"role":"user","content":"Inspect nearby modules."}}
+{"type":"assistant","sessionId":"11111111-1111-4111-8111-111111111111","uuid":"sub-agent-1","timestamp":"2026-01-01T10:00:01.500Z","cwd":"/workspace/acme","version":"2.1.0","message":{"role":"assistant","model":"claude-sonnet-test","content":[{"type":"text","text":"The nearby modules are unrelated."}]}}

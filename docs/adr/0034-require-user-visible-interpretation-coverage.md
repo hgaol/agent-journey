@@ -1,0 +1,3 @@
+# Require user-visible Interpretation Coverage Reports
+
+Every Source Adapter assigns an Evidence Disposition to each interpreted source record: canonical contribution, metadata, duplicate or transport detail, unclassified, or malformed. Each Interpretation exposes a Coverage Report with disposition counts, missing relationships or timing, adapter and schema versions, fidelity, and evidence links rather than an unsupported accuracy percentage. This expands adapter bookkeeping and UI, but makes silent data loss detectable and prevents visually polished rendering from implying complete understanding.

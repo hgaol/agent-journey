@@ -1,0 +1,7 @@
+{"type":"session","version":3,"id":"33333333-3333-4333-8333-333333333333","timestamp":"2026-01-01T10:00:00.000Z","cwd":"/workspace/acme"}
+{"type":"model_change","id":"p-model-1","parentId":null,"timestamp":"2026-01-01T10:00:00.500Z","provider":"openrouter","modelId":"test/agent-model"}
+{"type":"thinking_level_change","id":"p-think-level-1","parentId":"p-model-1","timestamp":"2026-01-01T10:00:00.750Z","thinkingLevel":"medium"}
+{"type":"message","id":"p-user-1","parentId":"p-think-level-1","timestamp":"2026-01-01T10:00:01.000Z","message":{"role":"user","content":"Read the greeting file."}}
+{"type":"message","id":"p-assistant-1","parentId":"p-user-1","timestamp":"2026-01-01T10:00:02.000Z","message":{"role":"assistant","content":[{"type":"thinking","thinking":"I will use read."},{"type":"toolCall","id":"tool-p-1","name":"read","arguments":{"path":"src/greeting.ts"}}]}}
+{"type":"message","id":"p-result-1","parentId":"p-assistant-1","timestamp":"2026-01-01T10:00:03.000Z","message":{"role":"toolResult","toolCallId":"tool-p-1","toolName":"read","content":[{"type":"text","text":"export const greeting = 'hello';"}],"isError":false}}
+{"type":"message","id":"p-assistant-2","parentId":"p-result-1","timestamp":"2026-01-01T10:00:04.000Z","message":{"role":"assistant","content":[{"type":"text","text":"The file contains the greeting constant."}]}}

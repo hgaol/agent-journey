@@ -1,0 +1,3 @@
+# Distribute plugins as self-contained inert packages
+
+Renderer Plugin authors may use TypeScript and the AgentJourney SDK, but installed packages contain a manifest, declared permissions, scoped CSS, precompiled sandbox-compatible JavaScript, static local assets, API compatibility metadata, and integrity information. AgentJourney does not run TypeScript compilers, dependency installation, or package lifecycle scripts; local development tooling performs builds outside the application. This limits dynamic dependency patterns but materially reduces installation-time code execution and makes plugin contents inspectable.

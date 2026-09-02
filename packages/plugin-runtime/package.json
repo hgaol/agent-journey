@@ -1,0 +1,23 @@
+{
+  "name": "@agentjourney/plugin-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@agentjourney/contracts": "workspace:*",
+    "@agentjourney/plugin-sdk": "workspace:*",
+    "picomatch": "^4.0.3",
+    "quickjs-emscripten": "^0.32.0",
+    "semver": "^7.8.5"
+  },
+  "devDependencies": {
+    "@types/picomatch": "^4.0.2",
+    "@types/semver": "^7.7.1"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+  }
+}

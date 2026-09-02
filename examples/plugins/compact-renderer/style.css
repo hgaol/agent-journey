@@ -1,0 +1,3 @@
+:root { --stage-bg: #07120f; --stage-text: #d1fae5; --stage-accent: #34d399; }
+.compact-custom { max-width: 900px; margin: 0 auto; font: 13px ui-monospace, monospace; }
+.compact-custom article { padding: 8px 0; border-bottom: 1px solid #1b3a30; white-space: pre-wrap; }

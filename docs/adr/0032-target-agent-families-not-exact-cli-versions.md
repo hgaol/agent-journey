@@ -1,0 +1,3 @@
+# Target source-agent families rather than exact historical CLI versions
+
+A Source-Native Renderer is selected by Source Agent identity and targets a documented agent-family style, while AgentJourney separately displays the evidenced source-agent version. Renderer Plugins may declare visual target ranges and users may install historical variants, but built-ins follow a contemporary style and never claim pixel-accurate reproduction of every recorded CLI release. This keeps the native presentation recognizable without committing the project to reconstruct and maintain every historical interface revision.

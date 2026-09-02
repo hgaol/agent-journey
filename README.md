@@ -1,0 +1,107 @@
+# AgentJourney
+
+AgentJourney is a local-only platform for preserving, reviewing, and replaying histories from Claude Code, OpenAI Codex CLI, Pi, and the standalone GitHub Copilot CLI.
+
+It passively scans approved history locations or imports selected native files. AgentJourney never launches, wraps, intercepts, or controls a coding agent. Source files remain read-only; exact Source Bundles are copied into an **unencrypted** independent archive.
+
+## Development
+
+Requirements: Node.js 22.19+ and pnpm 10+.
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Open <http://127.0.0.1:4317/>. The local host redirects to the Vite UI with a local bootstrap token.
+
+Validation:
+
+```bash
+pnpm typecheck
+pnpm test
+pnpm e2e
+pnpm build
+pnpm check:local-adapters  # reads recent local histories; uploads nothing
+```
+
+By default data is stored under `~/.agentjourney`. Override it with `AGENTJOURNEY_DATA_DIR=/path`.
+
+## Capture
+
+### Scan an agent history root
+
+1. Open **Sources**.
+2. Approve a detected Source Root.
+3. Preview candidate count, files, size, and date range.
+4. Select the exact Capture Scope.
+5. Capture it manually, or explicitly change that source to automatic scanning.
+
+Manual is the default Scan Policy. Automatic roots are reconciled in batched Capture Cycles.
+
+### Import native files
+
+The Sources page accepts individual native files or a directory. Files are transported locally as a ZIP, preserved byte-for-byte, and interpreted by the selected Source Adapter.
+
+### Import an AgentJourney archive
+
+Settings imports checksummed, data-only `.agentjourney` Journey Packages. Imported Interpretations retain external provenance and can be reinterpreted with a compatible local adapter.
+
+## Review and Replay
+
+- Search Canonical Activity by phrase or prefix and filter by Source Agent, Activity kind, Tool Capability, Project, and date.
+- Inspect exact Source Evidence or search within a selected Source Bundle.
+- Presentation Redaction masks high-confidence credentials without modifying evidence.
+- Browse immutable Journey Revisions and separately versioned Interpretations.
+- Compare revisions or interpretations by stable Evidence Anchor.
+- Add display titles, tags, Projects, bookmarks, and reviewer notes through a separate Review Overlay.
+- Review the complete Journey immediately, or Replay through evidenced timing, Delivery Traces, Agent Threads, and compressed idle gaps.
+- Inspect factual Coverage Reports and capability-based Fidelity Manifests.
+
+## Renderers
+
+Every Journey defaults to the renderer associated with its Source Agent. The same Canonical Activity can be switched among neutral, Claude Code, Codex, Pi, Copilot, or locally installed renderers.
+
+Built-in renderers are Style Pack plugins rather than hardcoded page variants. Third-party JavaScript renderers execute in capability-free QuickJS and return a validated declarative tree; trusted code renders that tree inside an opaque-origin iframe with scoped plugin CSS. Plugins receive only the selected Stage Document—not Source Evidence or archive access.
+
+See [Plugin authoring](docs/plugins.md).
+
+## Archive and export
+
+- SQLite stores metadata, graphs, overlays, settings, and FTS5 indexes.
+- Compressed content-addressed objects preserve exact source bytes and deduplicate revisions.
+- Verification checks object hashes, Interpretations, permissions, and search-index consistency.
+- Explicit Retention Policies can remove old revisions; no pruning occurs by default.
+- Deleting a Journey can retain a content-free Capture Exclusion to prevent surprise re-import.
+- `.agentjourney` packages are lossless, unencrypted, checksummed, data-only, and re-importable.
+- HTML Presentation Exports are escaped, redacted by default, self-contained, and contain no third-party executable code.
+
+See [Archive and package format](docs/archive-format.md).
+
+## Project structure
+
+```text
+apps/host                    local host module and loopback interface
+apps/web                     React Platform Shell and Journey Stage host
+packages/activity-graph      partial ordering, Turns, Replay frames, comparisons
+packages/archive             deep archive, search, lifecycle, and package module
+packages/contracts           JSON Schema and generated TypeScript contracts
+packages/plugin-sdk          adapter/renderer interfaces and conformance tools
+packages/plugin-runtime      package registry, QuickJS adapter sandbox
+packages/builtin-adapters    Claude, Codex, Pi, and Copilot adapters
+packages/builtin-renderers   neutral and source-native Style Packs
+packages/portability         sanitized HTML presentation renderer
+packages/test-fixtures       sanitized native-history fixtures
+```
+
+## Documentation
+
+- [Product spec](docs/product-spec.md)
+- [Usage guide](docs/usage.md)
+- [Architecture](docs/architecture.md)
+- [Completed implementation plan](docs/implementation-plan.md)
+- [Plugin authoring](docs/plugins.md)
+- [Archive and package format](docs/archive-format.md)
+- [Domain language](CONTEXT.md)
+- [Architecture decisions](docs/adr/)
+- [Landscape research](docs/research/coding-agent-session-viewers.md)

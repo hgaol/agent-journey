@@ -1,0 +1,22 @@
+{
+  "name": "@agentjourney/archive",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@agentjourney/activity-graph": "workspace:*",
+    "@agentjourney/contracts": "workspace:*",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@agentjourney/builtin-adapters": "workspace:*",
+    "@agentjourney/plugin-sdk": "workspace:*",
+    "@agentjourney/test-fixtures": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+  }
+}

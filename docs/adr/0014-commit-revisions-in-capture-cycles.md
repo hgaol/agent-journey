@@ -1,0 +1,3 @@
+# Commit Journey revisions in atomic Capture Cycles
+
+Manual scans form explicit Capture Cycles, while automatic source changes are batched until a quiet or adapter-declared safe boundary. A cycle creates at most one revision per changed Journey, and that revision becomes current only after its Source Bundle is preserved and interpreted successfully; failures leave the prior revision current while retaining the attempted Source Bundle as Pending Evidence for inspection and retry. This delays some updates and requires staging, but prevents incomplete source writes, revision storms, and partially interpreted Journeys from becoming visible truth.

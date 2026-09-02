@@ -1,0 +1,8 @@
+{
+  "type": "renderer",
+  "id": "example.compact-renderer",
+  "version": "1.0.0",
+  "displayName": "Compact Renderer",
+  "interfaceVersion": "^1.0.0",
+  "kind": "renderer"
+}

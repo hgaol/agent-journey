@@ -1,0 +1,3 @@
+# Make Source Adapters separate trusted plugins
+
+Source Agent support is extensible through Source Adapter Plugins that discover native histories, establish identity and provenance, assemble Source Bundles, derive Canonical Activity and reviewed source fields, and recognize fidelity, revisions, forks, and Agent Threads. Adapter authority is installed and granted separately from Renderer Plugins because adapters read raw local evidence while renderers never do. Built-in agents use the same versioned adapter contract, accepting API and permission complexity so new agents do not require core-platform changes.

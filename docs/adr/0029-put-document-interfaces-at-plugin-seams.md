@@ -1,0 +1,3 @@
+# Put document interfaces at plugin seams
+
+Source Adapter Plugins receive a constrained virtual source view and return a validated interpretation document; Renderer Plugins receive an immutable stage document for one selected Journey Revision and Interpretation. Neither interface exposes SQLite tables, object-store paths, archive-wide queries, or migration details. The host module retains identity, revisioning, transactions, validation, indexing, and storage. Purpose-built documents add translation work, but keep the Archive module deep, make permissions enforceable, and give production and test adapters the same interface.

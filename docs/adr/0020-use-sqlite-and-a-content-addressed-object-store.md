@@ -1,0 +1,3 @@
+# Store archive metadata in SQLite and evidence as content-addressed objects
+
+A deep Archive module hides a hybrid implementation: SQLite holds Journey identities, revisions, Activity Graphs, metadata, provenance, settings, and full-text indexes, while a content-addressed object store holds exact Source Bundle bytes and large Artifacts. Objects may be compressed and deduplicated only when byte-identical restoration remains possible, and database references become visible only after objects are durable. This is more operationally complex than one database file, but localizes consistency, verification, backup, export, repair, streaming, and retention behavior behind one interface.

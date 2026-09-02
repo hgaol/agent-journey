@@ -1,0 +1,22 @@
+{
+  "name": "@agentjourney/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/generated/contracts.ts",
+    "./validate": "./src/validate.ts",
+    "./schema": "./schema/contracts.schema.json"
+  },
+  "scripts": {
+    "generate": "tsx scripts/generate.ts",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^16.0.0"
+  }
+}

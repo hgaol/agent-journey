@@ -1,0 +1,3 @@
+# Separate Discovery from Capture
+
+AgentJourney may detect available agents and candidate Source Roots, but it previews approximate session count, projects, date range, and size before archiving content. The user explicitly grants Source Roots and chooses an initial Capture Scope; only approved roots may then be read for Source Bundles. Each root has a Scan Policy supporting manual or automatic rescanning, with manual as the default, so granting access never silently enables ongoing capture. This adds onboarding friction, but prevents surprising bulk duplication and constrains third-party Source Adapter Plugins from roaming the user's home directory.

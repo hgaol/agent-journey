@@ -1,0 +1,3 @@
+# Make Journey Stage renderers public plugins
+
+The Platform Shell remains stable while Renderer Plugins control presentation inside the Journey Stage. Built-in source-native renderers use the same versioned public contract and package shape as third-party renderers: a renderer may be a CSS-focused Style Pack or include JavaScript/TypeScript behavior for complex activity composition. Renderers may change visual expression and grouping but never Canonical Activity, evidence availability, or causal order. This avoids privileged hardcoded themes and enables community customization, at the cost of a durable plugin API, compatibility policy, and security boundary.
