@@ -69,6 +69,25 @@ test("Claude Code renderer follows the native TUI visual hierarchy", async ({ pa
   expect(Math.abs(markerCenter - textFirstLineCenter)).toBeLessThan(2);
 });
 
+test("GitHub Copilot CLI renderer follows its native colorful TUI hierarchy", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Check the greeting implementation.", { exact: true }).click();
+  const stage = page.frameLocator("iframe.journey-stage");
+  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(43, 45, 50)");
+  await expect(stage.locator(".stage-native-tabs")).toBeVisible();
+  await expect(stage.getByText("Model changed to copilot-test-model", { exact: true })).toBeVisible();
+  await expect(stage.locator(".stage-head")).toBeHidden();
+  await expect(stage.locator('.activity[data-kind="human-input"]').first()).toHaveCSS(
+    "background-color",
+    "rgb(8, 9, 10)"
+  );
+  const shell = stage.locator('.activity[data-native-name="shell"]').first();
+  await expect(shell.locator(".activity-marker")).toHaveCSS("color", "rgb(232, 213, 107)");
+  await expect(shell.locator(".link-token")).toHaveCSS("color", "rgb(102, 208, 222)");
+  await expect(stage.locator('.activity[data-kind="context-injection"]').first()).toBeHidden();
+  await expect(stage.locator(".stage-native-composer")).toBeVisible();
+});
+
 test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Inspect greeting module", { exact: true }).click();

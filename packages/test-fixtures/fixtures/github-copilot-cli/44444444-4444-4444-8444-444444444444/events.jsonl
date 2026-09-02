@@ -9,6 +9,8 @@
 {"type":"hook.start","timestamp":"2026-01-01T10:00:03.100Z","data":{"hookInvocationId":"hook-1","hookType":"preToolUse","input":{}}}
 {"type":"hook.end","timestamp":"2026-01-01T10:00:03.200Z","data":{"hookInvocationId":"hook-1","hookType":"preToolUse","success":true}}
 {"type":"tool.execution_complete","timestamp":"2026-01-01T10:00:04.000Z","data":{"toolCallId":"tool-g-1","turnId":"turn-1","success":true,"result":"export const greeting = 'hello';"}}
+{"type":"tool.execution_start","timestamp":"2026-01-01T10:00:04.100Z","data":{"toolCallId":"tool-g-shell","toolName":"Shell","arguments":{"command":"curl https://api.github.com/repos/acme/demo"},"turnId":"turn-1"}}
+{"type":"tool.execution_complete","timestamp":"2026-01-01T10:00:04.300Z","data":{"toolCallId":"tool-g-shell","turnId":"turn-1","success":true,"result":"request completed"}}
 {"type":"permission.requested","timestamp":"2026-01-01T10:00:04.500Z","data":{"requestId":"permission-1","promptRequest":"Allow the test command?"}}
 {"type":"permission.completed","timestamp":"2026-01-01T10:00:05.000Z","data":{"requestId":"permission-1","toolCallId":"tool-g-2","result":"approved"}}
 {"type":"assistant.message","timestamp":"2026-01-01T10:00:06.000Z","data":{"messageId":"message-2","model":"copilot-test-model","content":"The implementation is correct.","turnId":"turn-1"}}

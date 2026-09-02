@@ -16,7 +16,7 @@ import {
 
 const manifest = {
   id: "builtin.github-copilot-cli",
-  version: "0.1.1",
+  version: "0.2.0",
   interfaceVersion: "1.0.0",
   displayName: "GitHub Copilot CLI",
   sourceAgent: "github-copilot-cli",
@@ -384,6 +384,10 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
     } else if (["session.model_change", "session.mode_changed", "session.compaction_start", "session.compaction_complete", "session.resume", "session.info", "assistant.turn_start", "assistant.turn_end", "abort"].includes(type)) {
       const model = asString(data.newModel) ?? asString(data.selectedModel);
       if (model) builder.models.add(model);
+      const previousModel = asString(data.previousModel);
+      const stateText = type === "session.model_change" && model
+        ? `Model changed${previousModel ? ` from ${previousModel}` : ""} to ${model}`
+        : undefined;
       activityIds.push(
         builder.addActivity({
           kind: type === "abort" ? "diagnostic" : "state-transition",
@@ -394,6 +398,7 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
           actor: "system",
           nativeName: type,
           status: type === "abort" ? "cancelled" : "unknown",
+          ...(stateText ? { text: stateText } : {}),
           payload: jsonValue(data)
         })
       );

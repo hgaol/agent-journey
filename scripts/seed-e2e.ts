@@ -1,7 +1,11 @@
 import { readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { SqliteJourneyArchive } from "@agentjourney/archive";
-import { claudeCodeAdapter, piAdapter } from "@agentjourney/builtin-adapters";
+import {
+  claudeCodeAdapter,
+  copilotCliAdapter,
+  piAdapter
+} from "@agentjourney/builtin-adapters";
 import type { SourceAdapterPlugin } from "@agentjourney/plugin-sdk";
 import { MemorySource } from "@agentjourney/plugin-sdk/testing";
 import { fixturePath } from "@agentjourney/test-fixtures";
@@ -11,7 +15,7 @@ await rm(dataRoot, { recursive: true, force: true });
 const archive = await SqliteJourneyArchive.open(path.join(dataRoot, "archive"));
 
 async function seed(
-  sourceAgent: "pi" | "claude-code",
+  sourceAgent: "pi" | "claude-code" | "github-copilot-cli",
   adapter: SourceAdapterPlugin
 ): Promise<void> {
   const root = fixturePath(sourceAgent);
@@ -38,4 +42,5 @@ async function seed(
 
 await seed("pi", piAdapter);
 await seed("claude-code", claudeCodeAdapter);
+await seed("github-copilot-cli", copilotCliAdapter);
 archive.close();
