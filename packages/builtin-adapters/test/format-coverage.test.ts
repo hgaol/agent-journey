@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { MemorySource } from "@agentjourney/plugin-sdk/testing";
 import { fixturePath } from "@agentjourney/test-fixtures";
-import { deriveReplayFrames } from "@agentjourney/activity-graph";
+import { canAutoPlayReplay, deriveReplayFrames } from "@agentjourney/activity-graph";
 import { claudeCodeAdapter, codexCliAdapter, copilotCliAdapter, piAdapter } from "../src/index.js";
 
 async function readTree(root: string): Promise<Record<string, Uint8Array>> {
@@ -30,6 +30,16 @@ describe("built-in source format coverage", () => {
     const interpretation = await adapter.interpret(candidate!, source);
     expect(interpretation.threads.length).toBeGreaterThan(1);
     expect(interpretation.fidelity.agentThreads).toBe(true);
+  });
+
+  it("keeps untimed Claude control records replayable through explicit source-order placement", async () => {
+    const source = new MemorySource(await readTree(fixturePath("claude-code")));
+    const [candidate] = await claudeCodeAdapter.discover(source);
+    const interpretation = await claudeCodeAdapter.interpret(candidate!, source);
+    const frames = deriveReplayFrames(interpretation.activities, { streamMode: "events" });
+    expect(frames.some(({ timing }) => timing === "step")).toBe(false);
+    expect(frames.some(({ timing }) => timing === "source-order")).toBe(true);
+    expect(canAutoPlayReplay(frames, "events")).toBe(true);
   });
 
   it("preserves Claude parent UUID relationships as causal links", async () => {

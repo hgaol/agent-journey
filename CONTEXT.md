@@ -284,6 +284,10 @@ _Avoid_: Array index, screen position
 The deterministic order in which evidence appears within a native source stream. It does not by itself establish wall-clock order across streams or Agent Threads.
 _Avoid_: Timestamp order, global chronology
 
+**Source-Order Placement**:
+Replay scheduling that reveals an untimed Activity adjacent to timestamped activity according to its evidenced Source Order. It is labeled untimed and does not manufacture an observed timestamp.
+_Avoid_: Inferred timestamp, simulated wall-clock time
+
 **Display Order**:
 A deterministic flattening used when a presentation requires a list despite unknown relative order. It is a viewing convenience rather than a claim about observed chronology.
 _Avoid_: Source Order, causal order

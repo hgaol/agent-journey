@@ -40,7 +40,8 @@ All defined milestones are implemented and verified. Follow-up work should be dr
 - [x] Agent Thread preservation and multi-lane timeline
 - [x] dynamic Fork lineage resolution
 - [x] timed playhead, scrubbing, speed, and explicit idle-gap compression
-- [x] manual-step-only behavior where timing is not evidenced
+- [x] labeled Source-Order Placement for untimed records inside timestamped sessions
+- [x] manual-step-only behavior for wholly untimed evidence
 - [x] full Fidelity Manifest and Coverage Report UI with evidence links
 
 ## Milestone 4 — Extension isolation ✅

@@ -228,6 +228,7 @@ export function JourneyPage(): React.ReactNode {
   const detail = journey.data;
   const maxPlayhead = Math.max(0, replay.frames.length - 1);
   const currentFrame = replay.frames[replay.index];
+  const hasSourceOrderFrames = replay.frames.some(({ timing }) => timing === "source-order");
   const transportFrame = view === "replay" ? currentFrame : replay.frames.at(-1);
   const selectedActivity = detail.stage.activities.find(({ id }) => id === selectedActivityId)
     ?? (view === "replay"
@@ -553,8 +554,10 @@ export function JourneyPage(): React.ReactNode {
             title={replay.canAutoPlay
               ? streamMode === "simulated"
                 ? "Replay with clearly labeled simulated TUI streaming"
-                : "Replay evidenced timing"
-              : "Some Activities lack evidenced timing. Reinterpret with the latest adapter, step manually, or choose simulated TUI streaming."}
+                : hasSourceOrderFrames
+                  ? "Replay evidenced timestamps; untimed Activities are placed by source order and labeled"
+                  : "Replay evidenced timing"
+              : "No evidenced timestamps are available. Step manually or choose simulated TUI streaming."}
             onClick={togglePlayback}
           >
             {replay.playing ? "Ⅱ" : "▶"}
@@ -614,7 +617,9 @@ export function JourneyPage(): React.ReactNode {
               ? "SIMULATED cadence"
               : transportFrame?.timing === "evidenced"
                 ? "evidenced timestamp"
-                : "manual step"}
+                : transportFrame?.timing === "source-order"
+                  ? "untimed · source-order placement"
+                  : "manual step"}
             {transportFrame?.deliveryChunkIndex !== undefined
               ? ` · recorded chunk ${transportFrame.deliveryChunkIndex + 1}`
               : transportFrame?.simulatedTextLength !== undefined

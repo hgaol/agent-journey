@@ -40,6 +40,18 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
 });
 
+test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Inspect greeting module", { exact: true }).click();
+  await page.getByRole("button", { name: "REPLAY", exact: true }).click();
+  await expect(page.locator(".terminal-play")).toBeEnabled();
+  await expect(page.locator(".terminal-transport > small")).toContainText(
+    "untimed · source-order placement"
+  );
+  await page.locator(".terminal-play").click();
+  await expect(page.locator(".terminal-transport > span")).not.toContainText("1/");
+});
+
 test("offers clearly labeled simulated TUI streaming when recorded chunks are unavailable", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Read the greeting file.").click();

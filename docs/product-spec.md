@@ -45,7 +45,7 @@ The default mode exposes the complete selected Journey Revision and Interpretati
 
 ### Replay View
 
-Replay progressively reveals terminal behavior through a Playhead. Prompt, reasoning, Delivery Trace chunks, tool start/result, state transitions, and Agent Threads appear according to evidenced timestamps. Parallel thread lanes remain visible and long idle gaps are compressed explicitly rather than inventing timing. Users may choose event steps, Recorded Streaming when Delivery Traces exist, or explicitly labeled Simulated Streaming; simulation affects presentation only and never changes the Fidelity Manifest.
+Replay progressively reveals terminal behavior through a Playhead. Prompt, reasoning, Delivery Trace chunks, tool start/result, state transitions, and Agent Threads appear according to evidenced timestamps. Parallel thread lanes remain visible and long idle gaps are compressed explicitly rather than inventing timing. Untimed Activities within an otherwise timestamped source use visibly labeled Source-Order Placement and retain no observed timestamp. Users may choose event steps, Recorded Streaming when Delivery Traces exist, or explicitly labeled Simulated Streaming; simulation affects presentation only and never changes the Fidelity Manifest.
 
 ### Evidence inspector
 

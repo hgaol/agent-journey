@@ -62,7 +62,7 @@ The **Content streaming** selector offers:
 - **Recorded stream** — available only when the Fidelity Manifest reports Delivery Traces; preserved chunks appear in recorded order and timing.
 - **Simulated TUI stream** — opt-in character streaming for agent output and reasoning when native chunks were not persisted. The dock displays `SIMULATED cadence`; this is presentation only and does not become Source Evidence.
 
-Without complete evidenced timing, event and recorded modes remain manual-step-only. Simulated mode may autoplay because the user explicitly requested synthetic presentation.
+When a session contains timestamps plus occasional untimed control records, Replay places those records by evidenced Source Order and labels the dock `untimed · source-order placement`; no timestamp is inferred. A wholly untimed session remains manual-step-only in event and recorded modes. Simulated mode may autoplay because the user explicitly requested synthetic presentation.
 
 ## Export and import
 

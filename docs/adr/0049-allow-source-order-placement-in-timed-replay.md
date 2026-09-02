@@ -1,0 +1,3 @@
+# Allow source-order placement inside timestamped Replay
+
+A Replay may autoplay when it contains evidenced timestamps plus untimed Activities whose Source Order is known. Untimed Activities are inserted at short display intervals next to their timestamped neighbors and labeled `untimed · source-order placement`; they receive no `observedAt` value and do not improve the Fidelity Manifest. This prevents Claude Code's untimestamped mode, permission, latch, name, and file-history records from disabling an otherwise timestamped session while preserving the distinction between chronology and display scheduling.

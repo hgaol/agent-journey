@@ -8,6 +8,7 @@ export interface ReplayOptions {
   stepMs?: number;
   simulatedChunkSize?: number;
   simulatedChunkMs?: number;
+  sourceOrderStepMs?: number;
 }
 
 export interface ReplayFrame {
@@ -18,7 +19,7 @@ export interface ReplayFrame {
   observedAt?: string;
   observedOffsetMs?: number;
   displayOffsetMs: number;
-  timing: "evidenced" | "step" | "simulated";
+  timing: "evidenced" | "source-order" | "step" | "simulated";
   streamSource: "event" | "recorded" | "simulated";
   deliveryChunkIndex?: number;
   simulatedTextLength?: number;
@@ -161,7 +162,8 @@ export function deriveReplayFrames(
     maximumDisplayedIdleMs = 5_000,
     stepMs = 700,
     simulatedChunkSize = 4,
-    simulatedChunkMs = 45
+    simulatedChunkMs = 45,
+    sourceOrderStepMs = 40
   } = options;
   const ordered = linearizeActivityGraph(activities);
   const points: ReplayPoint[] = ordered.flatMap((activity, activityIndex) => {
@@ -212,6 +214,7 @@ export function deriveReplayFrames(
     return offsetMs === undefined ? Number.NaN : offsetMs;
   });
   const firstObserved = observedTimes.find(Number.isFinite);
+  const hasObservedTimeline = firstObserved !== undefined;
   let displayOffsetMs = 0;
   let previousObserved: number | undefined;
 
@@ -223,6 +226,8 @@ export function deriveReplayFrames(
       const previousPoint = points[frameIndex - 1];
       if (point.streamSource === "simulated" && previousPoint?.activity.id === point.activity.id) {
         displayOffsetMs += simulatedChunkMs;
+      } else if (!hasObserved && hasObservedTimeline) {
+        displayOffsetMs += sourceOrderStepMs;
       } else if (hasObserved && previousObserved !== undefined) {
         const gap = Math.max(0, observed! - previousObserved);
         idleGapCompressed = gap > maximumDisplayedIdleMs;
@@ -247,10 +252,28 @@ export function deriveReplayFrames(
           }
         : {}),
       displayOffsetMs,
-      timing: point.streamSource === "simulated" ? "simulated" : hasObserved ? "evidenced" : "step",
+      timing: point.streamSource === "simulated"
+        ? "simulated"
+        : hasObserved
+          ? "evidenced"
+          : hasObservedTimeline
+            ? "source-order"
+            : "step",
       idleGapCompressed
     };
   });
+}
+
+export function canAutoPlayReplay(
+  frames: readonly ReplayFrame[],
+  streamMode: ReplayStreamMode
+): boolean {
+  if (frames.length < 2) return false;
+  if (streamMode === "simulated") return true;
+  const hasEvidencedTiming = frames.some(({ timing }) => timing === "evidenced");
+  return hasEvidencedTiming && frames.every(({ timing }) =>
+    timing === "evidenced" || timing === "source-order"
+  );
 }
 
 export function compareInterpretations(

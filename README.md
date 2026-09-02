@@ -57,7 +57,7 @@ Each Journey opens in a **Terminal Replay Debugger**: terminal-native transcript
 - Inspect exact Source Evidence or search within a selected Source Bundle.
 - Presentation Redaction masks high-confidence credentials without modifying evidence.
 - Browse immutable Journey Revisions and separately versioned Interpretations.
-- Choose event steps, evidenced Recorded Streaming, or clearly labeled Simulated TUI Streaming during Replay.
+- Choose event steps, evidenced Recorded Streaming, or clearly labeled Simulated TUI Streaming during Replay; untimed control records use explicit Source-Order Placement instead of disabling timestamped sessions.
 - Compare revisions or interpretations by stable Evidence Anchor.
 - Add display titles, tags, Projects, bookmarks, and reviewer notes through a separate Review Overlay.
 - Review the complete Journey immediately, or Replay through evidenced timing, Delivery Traces, Agent Threads, and compressed idle gaps.

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { ActivityDocument, InterpretationDocument } from "@agentjourney/contracts";
-import { compareInterpretations, deriveReplayFrames, deriveTurns, linearizeActivityGraph } from "../src/index.js";
+import {
+  canAutoPlayReplay,
+  compareInterpretations,
+  deriveReplayFrames,
+  deriveTurns,
+  linearizeActivityGraph
+} from "../src/index.js";
 
 function activity(id: string, kind: ActivityDocument["kind"], sourceOrder: number, extra: Partial<ActivityDocument> = {}): ActivityDocument {
   return { id, kind, sourceOrder, evidenceAnchor: `fixture#${id}`, threadId: "main", ...extra };
@@ -31,6 +37,26 @@ describe("Activity Graph", () => {
       activity("b", "agent-output", 2, { timestamp: "2026-01-01T01:00:00.000Z" })
     ]);
     expect(frames[1]).toMatchObject({ idleGapCompressed: true, displayOffsetMs: 5000, observedOffsetMs: 3_600_000 });
+  });
+
+  it("autoplays mixed timestamp and source-order frames without claiming inferred timestamps", () => {
+    const frames = deriveReplayFrames([
+      activity("metadata", "state-transition", 1),
+      activity("prompt", "human-input", 2, { timestamp: "2026-01-01T00:00:01.000Z" }),
+      activity("output", "agent-output", 3, { timestamp: "2026-01-01T00:00:02.000Z" })
+    ]);
+    expect(frames.map(({ timing }) => timing)).toEqual(["source-order", "evidenced", "evidenced"]);
+    expect(canAutoPlayReplay(frames, "events")).toBe(true);
+  });
+
+  it("keeps a fully untimed Replay manual unless simulation is selected", () => {
+    const frames = deriveReplayFrames([
+      activity("prompt", "human-input", 1),
+      activity("output", "agent-output", 2)
+    ]);
+    expect(frames.every(({ timing }) => timing === "step")).toBe(true);
+    expect(canAutoPlayReplay(frames, "events")).toBe(false);
+    expect(canAutoPlayReplay(frames, "simulated")).toBe(true);
   });
 
   it("creates one Replay frame per evidenced Delivery Trace chunk", () => {
