@@ -13,7 +13,9 @@ pnpm install
 pnpm dev
 ```
 
-Open <http://127.0.0.1:4317/>. The local host redirects to the Vite UI with a local bootstrap token.
+Open <http://127.0.0.1:4317/>. The local host redirects to the Vite UI with a local bootstrap token. Opening Vite's `http://127.0.0.1:5173/` URL directly also routes through the host automatically.
+
+For a non-default host port, set both `AGENTJOURNEY_PORT` and the matching browser-visible `VITE_AGENTJOURNEY_HOST_ORIGIN`.
 
 Validation:
 

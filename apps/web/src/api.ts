@@ -15,6 +15,27 @@ import type {
 import type { RendererPlugin } from "@agentjourney/plugin-sdk";
 
 let csrfToken = "";
+const AUTH_REDIRECT_KEY = "agentjourney:auth-redirect";
+
+export function localHostUrl(): string {
+  const configured = import.meta.env.VITE_AGENTJOURNEY_HOST_ORIGIN as string | undefined;
+  if (configured) return new URL("/", configured).toString();
+  const host = new URL(window.location.href);
+  host.port = "4317";
+  host.pathname = "/";
+  host.search = "";
+  host.hash = "";
+  return host.toString();
+}
+
+function redirectThroughHost(): Promise<never> {
+  if (window.sessionStorage.getItem(AUTH_REDIRECT_KEY) === "pending") {
+    throw new Error("Local authorization redirect did not complete. Ensure the host is running and open its URL.");
+  }
+  window.sessionStorage.setItem(AUTH_REDIRECT_KEY, "pending");
+  window.location.replace(localHostUrl());
+  return new Promise<never>(() => {});
+}
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) return undefined as T;
@@ -35,13 +56,16 @@ export async function initializeLocalAuth(): Promise<void> {
     });
     const result = await parseResponse<{ csrfToken: string }>(response);
     csrfToken = result.csrfToken;
+    window.sessionStorage.removeItem(AUTH_REDIRECT_KEY);
     url.searchParams.delete("token");
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     return;
   }
   const response = await fetch("/api/v1/auth/session", { credentials: "include" });
+  if (response.status === 401) return redirectThroughHost();
   const result = await parseResponse<{ csrfToken: string }>(response);
   csrfToken = result.csrfToken;
+  window.sessionStorage.removeItem(AUTH_REDIRECT_KEY);
 }
 
 async function request<T>(input: string, init: RequestInit = {}): Promise<T> {

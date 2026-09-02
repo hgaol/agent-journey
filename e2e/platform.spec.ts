@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+test("opening the Vite URL directly completes local authorization", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("http://127.0.0.1:5173/");
+  await expect(page.getByRole("heading", { name: "Revisit how the work unfolded." })).toBeVisible();
+  await context.close();
+});
+
 test("reviews and re-renders a captured Journey", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Revisit how the work unfolded." })).toBeVisible();
