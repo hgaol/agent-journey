@@ -116,6 +116,24 @@ test("Claude Code renderer follows the native TUI visual hierarchy", async ({ pa
   await expectNativeChromeDocked(page, stage);
 });
 
+test("renders prose around inline Markdown tokens without dropping content", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Inspect greeting module", { exact: true }).click();
+  await page.getByLabel("Renderer").selectOption("builtin.claude-code");
+  const stage = page.frameLocator("iframe.journey-stage");
+  const formattedOutput = stage
+    .locator('.activity[data-kind="agent-output"]')
+    .filter({ has: stage.locator(".markdown-list-marker") });
+  await expect(formattedOutput).toHaveCount(1);
+  const renderedText = formattedOutput.locator(".activity-text");
+  await expect(renderedText).toContainText("The formal-style update compiled cleanly");
+  await expect(renderedText).toContainText("Icons removed");
+  await expect(renderedText).toContainText("Links de-emphasized");
+  await expect(renderedText).toContainText("Bolder name heading");
+  await expect(renderedText).toContainText("Darker section rule");
+  await expect(renderedText).toContainText("Verified by rebuilding all three variants");
+});
+
 test("GitHub Copilot CLI renderer follows its native colorful TUI hierarchy", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Check the greeting implementation.", { exact: true }).click();
