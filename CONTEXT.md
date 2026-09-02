@@ -232,6 +232,10 @@ _Avoid_: Typewriter effect, reconstructed cadence
 An explicitly labeled, optional TUI-like character reveal used when no Delivery Trace exists. It is presentation only and never represented as evidenced timing.
 _Avoid_: Recorded Streaming, faithful cadence
 
+**Streaming Speed**:
+A user-selected multiplier applied only to chunk transitions within Recorded or Simulated Streaming. It does not alter the timestamp-based intervals between separate Activities.
+_Avoid_: Timeline speed, source timing
+
 **Reasoning**:
 Deliberation or a reasoning summary attributed as such by Source Evidence. AgentJourney does not infer Reasoning from ordinary Agent Output.
 _Avoid_: Chain of thought guess, commentary

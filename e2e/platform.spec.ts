@@ -107,10 +107,15 @@ test("offers clearly labeled simulated TUI streaming when recorded chunks are un
   await expect(streaming.locator("option[value=recorded]")).toBeDisabled();
   await streaming.selectOption("simulated");
   await expect(page.locator(".terminal-pane-header")).toContainText("simulated stream");
+  const streamingSpeed = page.getByLabel("Streaming speed");
+  await expect(streamingSpeed).toBeVisible();
+  await streamingSpeed.selectOption("8");
+  await expect(streamingSpeed).toHaveValue("8");
   await page.locator(".terminal-play").click();
   await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED cadence", {
     timeout: 5000
   });
+  await expect(page.locator(".terminal-transport > small")).toContainText("stream 8×");
 });
 
 test("terminal transcript fills the available center pane", async ({ page }) => {

@@ -264,6 +264,34 @@ export function deriveReplayFrames(
   });
 }
 
+export interface ReplayDelayOptions {
+  timelineSpeed: number;
+  streamingSpeed: number;
+  maximumDelayMs?: number;
+}
+
+export function replayFrameDelay(
+  current: ReplayFrame,
+  next: ReplayFrame,
+  options: ReplayDelayOptions
+): number {
+  const withinContentStream = current.activityId === next.activityId
+    && (next.streamSource === "recorded" || next.streamSource === "simulated");
+  const selectedSpeed = withinContentStream
+    ? options.streamingSpeed
+    : options.timelineSpeed;
+  const speed = Number.isFinite(selectedSpeed) && selectedSpeed > 0 ? selectedSpeed : 1;
+  const minimumDelay = withinContentStream
+    ? 4
+    : next.timing === "source-order"
+      ? 12
+      : 16;
+  return Math.max(
+    minimumDelay,
+    Math.min(options.maximumDelayMs ?? 5_000, (next.displayOffsetMs - current.displayOffsetMs) / speed)
+  );
+}
+
 export function canAutoPlayReplay(
   frames: readonly ReplayFrame[],
   streamMode: ReplayStreamMode

@@ -36,6 +36,7 @@ All defined milestones are implemented and verified. Follow-up work should be dr
 - [x] causal Activity Graph linearization with deterministic non-chronological tie breaking
 - [x] provenance-aware evidenced and inferred Turns
 - [x] selectable event-step, evidenced Recorded Streaming, and explicitly Simulated TUI Streaming modes
+- [x] independent 0.5×–16× Streaming Speed and Timeline Speed controls
 - [x] Delivery Trace capture and chunk-level Replay frames
 - [x] Agent Thread preservation and multi-lane timeline
 - [x] dynamic Fork lineage resolution

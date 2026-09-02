@@ -3,6 +3,7 @@ import type { ActivityDocument } from "@agentjourney/contracts";
 import {
   canAutoPlayReplay,
   deriveReplayFrames,
+  replayFrameDelay,
   type ReplayStreamMode
 } from "@agentjourney/activity-graph";
 
@@ -17,6 +18,7 @@ export function useReplay(
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [streamingSpeed, setStreamingSpeed] = useState(1);
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
 
   useEffect(() => {
@@ -35,18 +37,13 @@ export function useReplay(
     }
     const current = frames[index];
     const next = frames[index + 1];
-    const minimumGap = next?.timing === "simulated"
-      ? 20
-      : next?.timing === "source-order"
-        ? 12
-        : 16;
-    const gap = Math.max(
-      minimumGap,
-      Math.min(5_000, (next!.displayOffsetMs - current!.displayOffsetMs) / speed)
-    );
+    const gap = replayFrameDelay(current!, next!, {
+      timelineSpeed: speed,
+      streamingSpeed
+    });
     const timer = window.setTimeout(() => setIndex((value) => value + 1), gap);
     return () => window.clearTimeout(timer);
-  }, [canAutoPlay, frames, index, playing, speed]);
+  }, [canAutoPlay, frames, index, playing, speed, streamingSpeed]);
 
   return {
     frames,
@@ -56,6 +53,8 @@ export function useReplay(
     setPlaying,
     speed,
     setSpeed,
+    streamingSpeed,
+    setStreamingSpeed,
     current: frames[index],
     canAutoPlay,
     streamMode,

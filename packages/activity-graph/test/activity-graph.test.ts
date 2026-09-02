@@ -5,7 +5,8 @@ import {
   compareInterpretations,
   deriveReplayFrames,
   deriveTurns,
-  linearizeActivityGraph
+  linearizeActivityGraph,
+  replayFrameDelay
 } from "../src/index.js";
 
 function activity(id: string, kind: ActivityDocument["kind"], sourceOrder: number, extra: Partial<ActivityDocument> = {}): ActivityDocument {
@@ -81,6 +82,22 @@ describe("Activity Graph", () => {
     );
     expect(frames.map(({ simulatedTextLength }) => simulatedTextLength)).toEqual([3, 6, 9, 11]);
     expect(frames.every(({ timing, streamSource }) => timing === "simulated" && streamSource === "simulated")).toBe(true);
+  });
+
+  it("configures content-stream speed independently from timeline speed", () => {
+    const frames = deriveReplayFrames(
+      [activity("stream", "agent-output", 1, { text: "x".repeat(48) })],
+      { streamMode: "simulated" }
+    );
+    const normal = replayFrameDelay(frames[0]!, frames[1]!, {
+      timelineSpeed: 1,
+      streamingSpeed: 1
+    });
+    const fast = replayFrameDelay(frames[0]!, frames[1]!, {
+      timelineSpeed: 1,
+      streamingSpeed: 4
+    });
+    expect(normal / fast).toBeGreaterThanOrEqual(4);
   });
 
   it("uses a fast sixteen-character default for simulated streaming", () => {

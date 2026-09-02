@@ -602,15 +602,29 @@ export function JourneyPage(): React.ReactNode {
             </option>
             <option value="simulated">simulated TUI stream</option>
           </select>
+          {streamMode !== "events" && (
+            <select
+              aria-label="Streaming speed"
+              value={replay.streamingSpeed}
+              onChange={(event) => replay.setStreamingSpeed(Number(event.target.value))}
+            >
+              <option value={0.5}>stream 0.5×</option>
+              <option value={1}>stream 1×</option>
+              <option value={2}>stream 2×</option>
+              <option value={4}>stream 4×</option>
+              <option value={8}>stream 8×</option>
+              <option value={16}>stream 16×</option>
+            </select>
+          )}
           <select
             aria-label="Replay speed"
             value={replay.speed}
             onChange={(event) => replay.setSpeed(Number(event.target.value))}
           >
-            <option value={0.5}>0.5×</option>
-            <option value={1}>1×</option>
-            <option value={2}>2×</option>
-            <option value={4}>4×</option>
+            <option value={0.5}>timeline 0.5×</option>
+            <option value={1}>timeline 1×</option>
+            <option value={2}>timeline 2×</option>
+            <option value={4}>timeline 4×</option>
           </select>
           <small>
             {transportFrame?.timing === "simulated"
@@ -625,6 +639,7 @@ export function JourneyPage(): React.ReactNode {
               : transportFrame?.simulatedTextLength !== undefined
                 ? ` · ${transportFrame.simulatedTextLength} characters`
                 : ""}
+            {streamMode !== "events" ? ` · stream ${replay.streamingSpeed}×` : ""}
             {transportFrame?.idleGapCompressed ? " · idle compressed" : ""}
           </small>
           <div className="terminal-native-context">
