@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { MemorySource } from "@agentjourney/plugin-sdk/testing";
 import { fixturePath } from "@agentjourney/test-fixtures";
+import { deriveReplayFrames } from "@agentjourney/activity-graph";
 import { claudeCodeAdapter, codexCliAdapter, copilotCliAdapter, piAdapter } from "../src/index.js";
 
 async function readTree(root: string): Promise<Record<string, Uint8Array>> {
@@ -117,6 +118,23 @@ describe("built-in source format coverage", () => {
     const second = await piAdapter.interpret(candidate!, source);
     expect(second.activities.map(({ id }) => id)).toEqual(first.activities.map(({ id }) => id));
     expect(second.activities.map(({ evidenceAnchor }) => evidenceAnchor)).toEqual(first.activities.map(({ evidenceAnchor }) => evidenceAnchor));
+  });
+
+  it("preserves timestamps on unclassified Copilot records so one unknown event cannot disable Replay", async () => {
+    const source = new MemorySource({
+      "copilot-session/events.jsonl": [
+        JSON.stringify({ type: "session.start", timestamp: "2026-01-01T00:00:00Z", data: { sessionId: "copilot-timestamp", context: { cwd: "/workspace" } } }),
+        JSON.stringify({ type: "user.message", timestamp: "2026-01-01T00:00:01Z", data: { content: "Hello" } }),
+        JSON.stringify({ type: "future.copilot.event", timestamp: "2026-01-01T00:00:02Z", data: { value: true } })
+      ].join("\n")
+    });
+    const [candidate] = await copilotCliAdapter.discover(source);
+    const interpretation = await copilotCliAdapter.interpret(candidate!, source);
+    const unknown = interpretation.activities.find(({ kind }) => kind === "unclassified");
+    expect(unknown?.timestamp).toBe("2026-01-01T00:00:02.000Z");
+    const frames = deriveReplayFrames(interpretation.activities, { streamMode: "events" });
+    expect(frames.length).toBeGreaterThan(1);
+    expect(frames.every(({ timing }) => timing === "evidenced")).toBe(true);
   });
 
   it("retains evidenced native turn identifiers where available", async () => {

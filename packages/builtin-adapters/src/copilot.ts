@@ -16,7 +16,7 @@ import {
 
 const manifest = {
   id: "builtin.github-copilot-cli",
-  version: "0.1.0",
+  version: "0.1.1",
   interfaceVersion: "1.0.0",
   displayName: "GitHub Copilot CLI",
   sourceAgent: "github-copilot-cli",
@@ -270,6 +270,81 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
       const callId = asString(data.toolCallId);
       if (callId) builder.completeThread(subagentThreads.get(callId) ?? `agent:${callId}`, returnActivityId);
       activityIds.push(returnActivityId);
+    } else if (type === "skill.invoked") {
+      activityIds.push(
+        builder.addActivity({
+          kind: "context-injection",
+          anchor: line.anchor,
+          sourceOrder: sourceBase,
+          threadId,
+          timestamp,
+          actor: "system",
+          nativeName: asString(data.name) ?? "skill",
+          text: textFrom(data.content ?? data.description),
+          payload: jsonValue(data)
+        })
+      );
+    } else if (type === "session.task_complete") {
+      activityIds.push(
+        builder.addActivity({
+          kind: "state-transition",
+          anchor: line.anchor,
+          sourceOrder: sourceBase,
+          threadId,
+          timestamp,
+          actor: "system",
+          nativeName: "task-complete",
+          status: statusFrom(data.success),
+          text: textFrom(data.summary),
+          payload: jsonValue(data)
+        })
+      );
+    } else if (type === "system.notification" || type === "session.error") {
+      activityIds.push(
+        builder.addActivity({
+          kind: type === "session.error" ? "diagnostic" : "state-transition",
+          anchor: line.anchor,
+          sourceOrder: sourceBase,
+          threadId,
+          timestamp,
+          actor: "system",
+          nativeName: asString(data.kind) ?? asString(data.errorType) ?? type,
+          text: textFrom(data.content ?? data.message),
+          status: type === "session.error" ? "failed" : "unknown",
+          payload: jsonValue(data)
+        })
+      );
+    } else if (type === "session.workspace_file_changed") {
+      activityIds.push(
+        builder.addActivity({
+          kind: "artifact",
+          anchor: line.anchor,
+          sourceOrder: sourceBase,
+          threadId,
+          timestamp,
+          actor: "system",
+          nativeName: asString(data.operation) ?? "workspace-file-changed",
+          text: asString(data.path),
+          payload: jsonValue(data)
+        })
+      );
+    } else if (["tool.user_requested", "session.permissions_changed", "session.context_changed"].includes(type)) {
+      if (type === "session.context_changed") {
+        workspace = asString(data.cwd) ?? workspace;
+        gitBranch = asString(data.branch) ?? gitBranch;
+      }
+      activityIds.push(
+        builder.addActivity({
+          kind: "state-transition",
+          anchor: line.anchor,
+          sourceOrder: sourceBase,
+          threadId,
+          timestamp,
+          actor: type === "tool.user_requested" ? "human" : "system",
+          nativeName: type,
+          payload: jsonValue(data)
+        })
+      );
     } else if (type === "session.shutdown") {
       activityIds.push(
         builder.addActivity({

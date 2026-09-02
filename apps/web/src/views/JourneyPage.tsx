@@ -554,7 +554,7 @@ export function JourneyPage(): React.ReactNode {
               ? streamMode === "simulated"
                 ? "Replay with clearly labeled simulated TUI streaming"
                 : "Replay evidenced timing"
-              : "This Interpretation supports manual stepping only"}
+              : "Some Activities lack evidenced timing. Reinterpret with the latest adapter, step manually, or choose simulated TUI streaming."}
             onClick={togglePlayback}
           >
             {replay.playing ? "Ⅱ" : "▶"}

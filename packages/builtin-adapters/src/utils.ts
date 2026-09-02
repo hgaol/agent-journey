@@ -197,6 +197,8 @@ export class InterpretationBuilder {
       kind: "unclassified",
       anchor: line.anchor,
       sourceOrder: line.line * 1000,
+      timestamp: normalizeTimestamp(line.value?.timestamp),
+      actor: "unknown",
       payload: jsonValue(line.value ?? { error: line.error ?? "unknown" })
     });
     this.disposition(line.anchor, "unclassified", [id], detail);
