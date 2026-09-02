@@ -40,6 +40,39 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
 });
 
+test("Pi renderer follows its native TUI visual hierarchy", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Read the greeting file.", { exact: true }).click();
+  await page.getByLabel("Renderer").selectOption("builtin.pi");
+  const stage = page.frameLocator("iframe.journey-stage");
+  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(43, 45, 50)");
+  await expect(stage.locator(".brand-mark")).toBeHidden();
+  await expect(stage.locator(".stage-title")).toHaveCSS("color", "rgb(138, 190, 183)");
+  await expect(stage.locator('.activity[data-kind="human-input"]').first()).toHaveCSS(
+    "background-color",
+    "rgb(52, 53, 65)"
+  );
+  await expect(stage.locator('.activity[data-kind="reasoning"] details').first()).toHaveAttribute("open", "");
+  await expect(stage.locator('.activity[data-kind="tool-invocation"]').first()).toHaveCSS(
+    "background-color",
+    "rgb(40, 50, 40)"
+  );
+  await expect(stage.locator('.activity[data-kind="tool-invocation"][data-native-name="bash"]')).toHaveCSS(
+    "background-color",
+    "rgb(60, 40, 40)"
+  );
+  await expect(stage.locator('.activity[data-kind="tool-invocation"][data-native-name="bash"] .tool-timeout')).toHaveText(
+    "(timeout 30s)"
+  );
+  const failedToolResult = stage.locator('.activity[data-kind="tool-result"][data-status="failed"]');
+  await expect(failedToolResult).toHaveCSS("background-color", "rgb(60, 40, 40)");
+  await expect(failedToolResult.locator(".tool-duration")).toHaveText("Took 1.0s");
+  await expect(stage.locator(".markdown-heading")).toHaveCSS("color", "rgb(240, 198, 116)");
+  await expect(stage.locator(".markdown-list-marker")).toHaveText("1.");
+  await expect(stage.locator(".markdown-list-marker")).toHaveCSS("color", "rgb(138, 190, 183)");
+  await expect(stage.locator(".stage-native-composer")).toBeVisible();
+});
+
 test("Claude Code renderer follows the native TUI visual hierarchy", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Inspect greeting module", { exact: true }).click();

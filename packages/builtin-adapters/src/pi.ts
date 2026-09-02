@@ -14,7 +14,7 @@ import {
 
 const manifest = {
   id: "builtin.pi",
-  version: "0.1.0",
+  version: "0.2.0",
   interfaceVersion: "1.0.0",
   displayName: "Pi",
   sourceAgent: "pi",
@@ -37,7 +37,7 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
     if (!nativeSessionId) continue;
 
     let title: string | undefined;
-    let sourceAgentVersion = asString(header?.version);
+    let sourceAgentVersion = asString(header?.agentVersion) ?? asString(header?.piVersion);
     for (const line of lines.slice(0, 80)) {
       const record = line.value;
       if (!record) continue;
@@ -45,7 +45,7 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
         const message = asRecord(record.message);
         if (message?.role === "user") title ??= firstText(message.content)?.slice(0, 120);
       }
-      sourceAgentVersion ??= asString(record.version);
+      sourceAgentVersion ??= asString(record.agentVersion) ?? asString(record.piVersion);
     }
 
     const workspace = asString(header?.cwd);
@@ -73,10 +73,17 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
   const sourceText = bundle.readText(mainPath);
   const lines = parseJsonLines(mainPath, sourceText);
   assertNoTrailingPartialJson(sourceText, lines);
+  const sessionHeader = lines.find(({ value }) => value?.type === "session")?.value;
+  const explicitPiVersion = asString(sessionHeader?.agentVersion) ?? asString(sessionHeader?.piVersion);
+  const rawSessionFormatVersion = sessionHeader?.version;
+  const sessionFormatVersion = typeof rawSessionFormatVersion === "string" || typeof rawSessionFormatVersion === "number"
+    ? String(rawSessionFormatVersion)
+    : undefined;
   const recordActivities = new Map<string, string>();
   const toolCalls = new Map<string, string>();
   let workspace = candidate.workspace;
-  let sourceAgentVersion = candidate.sourceAgentVersion;
+  let sourceAgentVersion = explicitPiVersion
+    ?? (candidate.sourceAgentVersion !== sessionFormatVersion ? candidate.sourceAgentVersion : undefined);
   let startedAt = candidate.startedAt;
   let title = candidate.title;
   let modelProvider: string | undefined;
@@ -99,7 +106,7 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
 
     if (type === "session") {
       workspace ??= asString(record.cwd);
-      sourceAgentVersion ??= asString(record.version);
+      sourceAgentVersion ??= asString(record.agentVersion) ?? asString(record.piVersion);
       startedAt ??= timestamp;
       builder.disposition(line.anchor, "metadata");
       continue;

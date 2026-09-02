@@ -60,6 +60,19 @@ const cases: Array<{
   }
 ];
 
+describe("Pi metadata", () => {
+  it("does not report the session format version as the Pi application version", async () => {
+    const source = new MemorySource(await readTree(fixturePath("pi")), "pi");
+    const [candidate] = await piAdapter.discover(source);
+    expect(candidate?.sourceAgentVersion).toBeUndefined();
+    const interpretation = await piAdapter.interpret(
+      { ...candidate!, sourceAgentVersion: "3" },
+      source
+    );
+    expect(interpretation.journey.sourceAgentVersion).toBeUndefined();
+  });
+});
+
 describe.each(cases)("$label adapter", ({ sourceAgent, adapter, nativeSessionId, expectedKinds }) => {
   it("discovers and interprets a sanitized native history without silent records", async () => {
     const source = new MemorySource(await readTree(fixturePath(sourceAgent)), sourceAgent);
