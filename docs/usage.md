@@ -36,7 +36,9 @@ Search indexes Canonical Activity, not arbitrary Source Bundle bytes. Exact Evid
 
 ## Journey review
 
-The inspector identifies Source Agent, agent version, Model Provider, Model, Git branch, Native Session Identity, Journey Revision, and Interpretation. Unknown metadata remains unknown rather than being inferred.
+A Journey opens as a Terminal Replay Debugger. The center pane is the source-styled terminal transcript; the left rail navigates Agent Threads, Turns, revisions, and Interpretations; the right rail inspects the selected Activity and opens exact evidence; the bottom dock controls timestamp-driven Replay.
+
+The workspace identifies Source Agent, agent version, Model Provider, Model, Git branch, Native Session Identity, Journey Revision, and Interpretation. Unknown metadata remains unknown rather than being inferred.
 
 Use:
 
@@ -52,7 +54,7 @@ Sensitive Findings are masked by default. Reveal actions are local and explicit;
 
 ## Replay
 
-Replay uses the Activity Graph rather than inventing a flat chronology. The timeline shows one lane per Agent Thread. Evidenced timestamps and Delivery Trace chunks drive automatic playback; a Journey without complete timing supports manual stepping only. Long idle gaps are compressed and indicated rather than silently rewritten.
+Replay uses the Activity Graph rather than inventing a flat chronology. Prompts, reasoning, tool calls/results, status transitions, and Delivery Trace chunks appear in the terminal pane as their evidenced frames are reached. The timeline shows one lane per Agent Thread. Evidenced timestamps and Delivery Trace chunks drive automatic playback; a Journey without complete timing supports manual stepping only. Long idle gaps are compressed and indicated rather than silently rewritten.
 
 ## Export and import
 

@@ -14,7 +14,9 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Read the greeting file.")).toBeVisible();
   await page.getByText("Read the greeting file.").click();
 
-  await expect(page.getByRole("heading", { name: "Read the greeting file." })).toBeVisible();
+  await expect(page.getByTestId("terminal-replay-debugger")).toBeVisible();
+  await expect(page.locator(".terminal-session-title strong")).toHaveText("Read the greeting file.");
+  await expect(page.getByLabel("Terminal session replay")).toBeVisible();
   const stage = page.frameLocator("iframe.journey-stage");
   await expect(stage.getByText("The file contains the greeting constant.", { exact: true })).toBeVisible();
   await expect(page.locator("iframe.journey-stage")).toHaveAttribute("title", "Pi Journey Stage");
@@ -27,8 +29,12 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.locator("iframe.journey-stage")).toHaveAttribute("title", "Compact Renderer Journey Stage");
   await expect(stage.getByRole("heading", { name: /Custom Journey Stage/u })).toBeVisible();
 
-  await page.getByRole("button", { name: "Replay" }).click();
+  await page.getByRole("button", { name: "REPLAY", exact: true }).click();
   await expect(page.getByLabel("Agent Thread replay lanes")).toBeVisible();
+  await expect(page.locator(".terminal-pane-header")).toContainText("REPLAY");
+  await expect(page.locator(".terminal-transport > span")).toContainText("1/");
+  await page.locator(".terminal-play").click();
+  await expect(page.locator(".terminal-transport > span")).not.toContainText("1/");
   await page.getByRole("button", { name: "Evidence" }).click();
   await expect(page.getByRole("dialog", { name: "Source Evidence inspector" })).toBeVisible();
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();

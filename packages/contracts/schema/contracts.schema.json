@@ -689,7 +689,8 @@
             "view": { "type": "string", "enum": ["review", "replay"] },
             "playheadActivityId": { "type": "string" },
             "playheadDeliveryChunk": { "type": "integer", "minimum": 0 },
-            "searchQuery": { "type": "string" }
+            "searchQuery": { "type": "string" },
+            "selectedActivityId": { "type": "string" }
           }
         }
       }

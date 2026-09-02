@@ -169,8 +169,12 @@ The stable AgentJourney experience surrounding Journey presentation, including l
 _Avoid_: Renderer chrome, agent theme
 
 **Journey Stage**:
-The bounded presentation surface where the selected renderer expresses a Journey Revision without changing its evidence, causality, or availability.
-_Avoid_: Entire application, transcript pane
+The bounded terminal transcript surface where the selected renderer expresses a Journey Revision without changing its evidence, causality, or availability.
+_Avoid_: Entire application, chat pane
+
+**Terminal Replay Debugger**:
+The Journey workspace combining a terminal-native transcript, Thread and Turn navigation, Activity inspection, and timestamp-driven Replay controls.
+_Avoid_: Dashboard, chat UI, terminal emulator
 
 **Source-Native Renderer**:
 An interchangeable presentation of a Journey patterned after an agent's recognizable language, information hierarchy, and visual conventions. It never changes Canonical Activity and is not terminal emulation or a pixel-exact recording.

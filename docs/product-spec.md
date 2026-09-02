@@ -35,13 +35,17 @@ macOS, Linux, native Windows, and WSL are development targets. The project curre
 
 ## Views
 
+### Terminal Replay Debugger
+
+The Journey workspace mimics a coding-agent terminal rather than a dashboard or chat application: terminal transcript in the center, Thread and Turn navigation on the left, Activity evidence inspection on the right, and a timestamp-driven replay dock below. The selected Source-Native Renderer controls terminal vocabulary and visual treatment.
+
 ### Review View
 
-The default view exposes the full selected Journey Revision and Interpretation immediately, with search, filtering, evidence links, Coverage Report, Fidelity Manifest, revision selection, and Review Overlays.
+The default mode exposes the complete selected Journey Revision and Interpretation immediately inside the terminal transcript, with search, evidence links, Coverage Report, Fidelity Manifest, revision selection, and Review Overlays.
 
 ### Replay View
 
-Replay progressively reveals Activities through a Playhead. It uses evidenced timestamps and Delivery Traces only when present, supports parallel Agent Thread lanes, and never invents timing.
+Replay progressively reveals terminal behavior through a Playhead. Prompt, reasoning, Delivery Trace chunks, tool start/result, state transitions, and Agent Threads appear according to evidenced timestamps. Parallel thread lanes remain visible and long idle gaps are compressed explicitly rather than inventing timing.
 
 ### Evidence inspector
 

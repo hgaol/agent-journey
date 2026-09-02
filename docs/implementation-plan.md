@@ -31,6 +31,8 @@ All defined milestones are implemented and verified. Follow-up work should be dr
 
 ## Milestone 3 — Replay ✅
 
+- [x] production Terminal Replay Debugger selected from the captured three-variant prototype
+- [x] source-native terminal transcript with Thread/Turn rail and Activity inspector
 - [x] causal Activity Graph linearization with deterministic non-chronological tie breaking
 - [x] provenance-aware evidenced and inferred Turns
 - [x] Delivery Trace capture and chunk-level Replay frames

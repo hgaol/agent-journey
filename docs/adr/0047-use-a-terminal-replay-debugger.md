@@ -1,0 +1,3 @@
+# Use a terminal replay debugger for the Journey workspace
+
+The production Journey view adopts variant B from the captured `prototype/terminal-ui` branch (`0212e54`): a terminal transcript in the center, Thread and Turn navigation on the left, Activity evidence inspection on the right, and a timestamp-driven replay dock below. “Reply” was clarified to mean Replay of persisted behavior, not sending a new prompt, so AgentJourney remains read-only and outside Agent Control. This layout preserves forensic controls while making prompts, streaming reasoning, tool lifecycle, subagents, timing, and status unfold like the source terminal rather than a card-based web chat.

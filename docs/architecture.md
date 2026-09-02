@@ -17,7 +17,7 @@ Source Adapter ── InterpretationDocument ──▶ Capture Coordinator
                       HTTP/JSON + SSE loopback seam
                                        ▼
                               Platform Shell
-                  library · review · replay · evidence
+        library · Terminal Replay Debugger · evidence · lifecycle
                                        │ StageDocument
                     ┌──────────────────┴──────────────────┐
                     ▼                                     ▼
@@ -60,6 +60,10 @@ Fastify binds to `127.0.0.1`. A per-installation secret bootstraps an HTTP-only 
 8. An SSE event refreshes browser queries.
 
 Revision identity uses Source Agent + Native Session Identity for the Journey and a path-independent content multiset for the revision. Moved copies deduplicate. Append-compatible content creates a normal revision; incompatible divergence is flagged as an Identity Conflict.
+
+## Terminal Replay Debugger
+
+The production Journey route uses the terminal-native debugger layout chosen from prototype variant B: Thread and Turn rail, central source-styled terminal transcript, selected-Activity inspector, and multi-lane replay dock. The terminal is a semantic reconstruction, not a PTY emulator and not an agent-control surface.
 
 ## Replay model
 

@@ -160,6 +160,7 @@ export interface StageDocument {
     playheadActivityId?: string;
     playheadDeliveryChunk?: number;
     searchQuery?: string;
+    selectedActivityId?: string;
   };
 }
 export interface TurnDocument {

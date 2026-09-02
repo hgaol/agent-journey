@@ -51,6 +51,8 @@ Settings imports checksummed, data-only `.agentjourney` Journey Packages. Import
 
 ## Review and Replay
 
+Each Journey opens in a **Terminal Replay Debugger**: terminal-native transcript center, Thread/Turn rail left, Activity inspector right, and timestamp-driven replay dock below. Replay reconstructs prompts, reasoning chunks, tools, results, state changes, and subagent lanes from persisted evidence; it does not send prompts to or control the source agent.
+
 - Search Canonical Activity by phrase or prefix and filter by Source Agent, Activity kind, Tool Capability, Project, and date.
 - Inspect exact Source Evidence or search within a selected Source Bundle.
 - Presentation Redaction masks high-confidence credentials without modifying evidence.
