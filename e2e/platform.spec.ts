@@ -48,11 +48,25 @@ test("Claude Code renderer follows the native TUI visual hierarchy", async ({ pa
   const human = stage.locator('.activity[data-kind="human-input"]').first();
   const artifact = stage.locator('.activity[data-kind="artifact"]').first();
   const payload = stage.locator(".activity-payload").first();
+  const toolArgument = stage.locator(".tool-argument").first();
   await expect(body).toHaveCSS("background-color", "rgb(43, 45, 50)");
   await expect(human).toHaveCSS("background-color", "rgb(58, 58, 58)");
   await expect(human).toHaveCSS("border-left-width", "0px");
   await expect(artifact).toBeHidden();
   await expect(payload).toBeHidden();
+  await expect(toolArgument).toHaveText("src/greeting.ts");
+  await expect(toolArgument).toHaveCSS("color", "rgb(189, 199, 255)");
+  await expect(page.locator(".terminal-native-path")).toHaveCSS("color", "rgb(141, 184, 232)");
+  const assistantActivity = await stage.locator('.activity[data-kind="agent-output"]').first().boundingBox();
+  const assistantMarker = await stage.locator('.activity[data-kind="agent-output"] .activity-marker').first().boundingBox();
+  const assistantText = await stage.locator('.activity[data-kind="agent-output"] .activity-text').first().boundingBox();
+  expect(assistantActivity).not.toBeNull();
+  expect(assistantMarker).not.toBeNull();
+  expect(assistantText).not.toBeNull();
+  expect(assistantText!.x - assistantActivity!.x).toBeLessThan(28);
+  const markerCenter = assistantMarker!.y + assistantMarker!.height / 2;
+  const textFirstLineCenter = assistantText!.y + 11.5;
+  expect(Math.abs(markerCenter - textFirstLineCenter)).toBeLessThan(2);
 });
 
 test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {

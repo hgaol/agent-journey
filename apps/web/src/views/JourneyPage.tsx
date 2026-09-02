@@ -627,6 +627,12 @@ export function JourneyPage(): React.ReactNode {
                 : ""}
             {transportFrame?.idleGapCompressed ? " · idle compressed" : ""}
           </small>
+          <div className="terminal-native-context">
+            <span className="terminal-native-user">local@agentjourney:</span>
+            <span className="terminal-native-path">{detail.summary.workspace ?? "~"}</span>
+            <span className="terminal-native-branch">({detail.interpretation.journey.gitBranch ?? "no branch"})</span>
+            <span className="terminal-native-model">{detail.interpretation.journey.models?.[0] ?? "model unknown"}</span>
+          </div>
         </div>
         <ReplayTimeline
           frames={replay.frames}

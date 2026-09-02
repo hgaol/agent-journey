@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StageDocument } from "@agentjourney/contracts";
-import { projectStageDocument } from "./StageFrame.js";
+import { STAGE_SCRIPT, projectStageDocument } from "./StageFrame.js";
 
 function stage(): StageDocument {
   return {
@@ -50,6 +50,10 @@ function stage(): StageDocument {
 }
 
 describe("projectStageDocument", () => {
+  it("keeps the trusted iframe renderer script syntactically valid", () => {
+    expect(() => new Function(STAGE_SCRIPT)).not.toThrow();
+  });
+
   it("reveals only recorded Delivery Trace chunks reached by the playhead", () => {
     const input = stage();
     input.presentation = {
