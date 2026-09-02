@@ -410,6 +410,10 @@ export class SqliteJourneyArchive implements JourneyArchive {
       ...(overlay.displayTitle ?? interpretation.journey.title
         ? { title: overlay.displayTitle ?? interpretation.journey.title }
         : {}),
+      ...(interpretation.journey.workspace ? { workspace: interpretation.journey.workspace } : {}),
+      ...(interpretation.journey.gitBranch ? { gitBranch: interpretation.journey.gitBranch } : {}),
+      ...(interpretation.journey.modelProvider ? { modelProvider: interpretation.journey.modelProvider } : {}),
+      ...(interpretation.journey.models ? { models: interpretation.journey.models } : {}),
       activities: stageActivities,
       threads: interpretation.threads,
       turns: deriveTurns(interpretation.activities),

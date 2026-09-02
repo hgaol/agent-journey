@@ -651,6 +651,10 @@
         "sourceAgent": { "$ref": "#/$defs/SourceAgentId" },
         "sourceAgentVersion": { "type": "string" },
         "title": { "type": "string" },
+        "workspace": { "type": "string" },
+        "gitBranch": { "type": "string" },
+        "modelProvider": { "type": "string" },
+        "models": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "activities": {
           "type": "array",
           "items": { "$ref": "#/$defs/ActivityDocument" }

@@ -53,7 +53,7 @@ The Platform Shell can inspect exact Source Evidence for a selected revision. Ra
 
 ## Rendering
 
-The Platform Shell remains stable. Renderer Plugins own only the Journey Stage. Built-in and third-party renderers use the same versioned interface. A Style Pack is a CSS-focused renderer; complex renderers may use precompiled sandboxed JavaScript authored in TypeScript.
+The Platform Shell remains stable. Renderer Plugins own only the Journey Stage. Built-in and third-party renderers use the same versioned interface. A Style Pack is a CSS-focused renderer; complex renderers may use precompiled sandboxed JavaScript authored in TypeScript. Source-Native Renderers reproduce native terminal hierarchy and density—not generic cards with different colors—and may collapse presentation noise while the Activity inspector retains full forensic access.
 
 Renderer code runs in capability-free QuickJS and returns a validated declarative render tree. Trusted AgentJourney code realizes that tree in an opaque-origin iframe with scoped CSS; plugin code has no browser DOM, network, filesystem, archive-wide, browser-storage, or Platform Shell access. Renderer packages are inert and locally installed; there is no marketplace.
 

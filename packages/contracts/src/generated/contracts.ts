@@ -142,6 +142,10 @@ export interface StageDocument {
   sourceAgent: SourceAgentId;
   sourceAgentVersion?: string;
   title?: string;
+  workspace?: string;
+  gitBranch?: string;
+  modelProvider?: string;
+  models?: string[];
   activities: ActivityDocument[];
   threads: AgentThreadDocument[];
   turns: TurnDocument[];

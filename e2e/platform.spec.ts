@@ -40,6 +40,21 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
 });
 
+test("Claude Code renderer follows the native TUI visual hierarchy", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Inspect greeting module", { exact: true }).click();
+  const stage = page.frameLocator("iframe.journey-stage");
+  const body = stage.locator("body");
+  const human = stage.locator('.activity[data-kind="human-input"]').first();
+  const artifact = stage.locator('.activity[data-kind="artifact"]').first();
+  const payload = stage.locator(".activity-payload").first();
+  await expect(body).toHaveCSS("background-color", "rgb(43, 45, 50)");
+  await expect(human).toHaveCSS("background-color", "rgb(58, 58, 58)");
+  await expect(human).toHaveCSS("border-left-width", "0px");
+  await expect(artifact).toBeHidden();
+  await expect(payload).toBeHidden();
+});
+
 test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Inspect greeting module", { exact: true }).click();
