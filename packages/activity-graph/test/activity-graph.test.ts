@@ -83,6 +83,15 @@ describe("Activity Graph", () => {
     expect(frames.every(({ timing, streamSource }) => timing === "simulated" && streamSource === "simulated")).toBe(true);
   });
 
+  it("uses a fast sixteen-character default for simulated streaming", () => {
+    const frames = deriveReplayFrames(
+      [activity("stream", "agent-output", 1, { text: "x".repeat(64) })],
+      { streamMode: "simulated" }
+    );
+    expect(frames).toHaveLength(4);
+    expect(frames.at(-1)?.simulatedTextLength).toBe(64);
+  });
+
   it("compares interpretations by stable Evidence Anchor", () => {
     const base = {
       schemaVersion: "1.0.0",

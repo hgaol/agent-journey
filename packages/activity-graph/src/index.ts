@@ -161,7 +161,7 @@ export function deriveReplayFrames(
     streamMode = "events",
     maximumDisplayedIdleMs = 5_000,
     stepMs = 700,
-    simulatedChunkSize = 4,
+    simulatedChunkSize = 16,
     simulatedChunkMs = 45,
     sourceOrderStepMs = 40
   } = options;
