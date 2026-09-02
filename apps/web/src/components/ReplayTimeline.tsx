@@ -18,10 +18,10 @@ export function ReplayTimeline(props: {
           <div className="timeline-track">
             {props.frames.map((frame, index) => frame.threadId === threadId && (
               <button
-                key={`${frame.activityId}:${frame.deliveryChunkIndex ?? "activity"}`}
+                key={`${frame.activityId}:${frame.deliveryChunkIndex ?? frame.simulatedTextLength ?? index}`}
                 className={`${index === props.currentIndex ? "current" : ""} ${frame.idleGapCompressed ? "compressed" : ""}`}
                 style={{ left: `${(frame.displayOffsetMs / maxOffset) * 100}%` }}
-                title={`${activityById.get(frame.activityId)?.kind ?? "activity"}${frame.deliveryChunkIndex !== undefined ? ` · chunk ${frame.deliveryChunkIndex + 1}` : ""}`}
+                title={`${activityById.get(frame.activityId)?.kind ?? "activity"}${frame.deliveryChunkIndex !== undefined ? ` · recorded chunk ${frame.deliveryChunkIndex + 1}` : frame.simulatedTextLength !== undefined ? ` · simulated ${frame.simulatedTextLength} chars` : ""}`}
                 onClick={() => props.onSeek(index)}
               />
             ))}

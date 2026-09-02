@@ -1,5 +1,15 @@
 import type { ActivityDocument, InterpretationDocument, TurnDocument } from "@agentjourney/contracts";
 
+export type ReplayStreamMode = "events" | "recorded" | "simulated";
+
+export interface ReplayOptions {
+  streamMode?: ReplayStreamMode;
+  maximumDisplayedIdleMs?: number;
+  stepMs?: number;
+  simulatedChunkSize?: number;
+  simulatedChunkMs?: number;
+}
+
 export interface ReplayFrame {
   activityId: string;
   threadId: string;
@@ -8,8 +18,10 @@ export interface ReplayFrame {
   observedAt?: string;
   observedOffsetMs?: number;
   displayOffsetMs: number;
-  timing: "evidenced" | "step";
+  timing: "evidenced" | "step" | "simulated";
+  streamSource: "event" | "recorded" | "simulated";
   deliveryChunkIndex?: number;
+  simulatedTextLength?: number;
   idleGapCompressed: boolean;
 }
 
@@ -134,27 +146,66 @@ interface ReplayPoint {
   activity: ActivityDocument;
   activityIndex: number;
   observedAt: string | undefined;
+  streamSource: "event" | "recorded" | "simulated";
   offsetMs?: number | undefined;
   deliveryChunkIndex?: number | undefined;
+  simulatedTextLength?: number | undefined;
 }
 
 export function deriveReplayFrames(
   activities: readonly ActivityDocument[],
-  maximumDisplayedIdleMs = 5_000,
-  stepMs = 700
+  options: ReplayOptions = {}
 ): ReplayFrame[] {
+  const {
+    streamMode = "events",
+    maximumDisplayedIdleMs = 5_000,
+    stepMs = 700,
+    simulatedChunkSize = 4,
+    simulatedChunkMs = 45
+  } = options;
   const ordered = linearizeActivityGraph(activities);
   const points: ReplayPoint[] = ordered.flatMap((activity, activityIndex) => {
-    if (!activity.deliveryTrace?.length) {
-      return [{ activity, activityIndex, observedAt: activity.timestamp }];
+    if (streamMode === "recorded" && activity.deliveryTrace?.length) {
+      return activity.deliveryTrace.map((chunk, deliveryChunkIndex) => ({
+        activity,
+        activityIndex,
+        deliveryChunkIndex,
+        observedAt: chunk.timestamp ?? activity.timestamp,
+        offsetMs: chunk.offsetMs,
+        streamSource: "recorded" as const
+      }));
     }
-    return activity.deliveryTrace.map((chunk, deliveryChunkIndex) => ({
+    const canSimulate = streamMode === "simulated"
+      && Boolean(activity.text)
+      && (activity.kind === "agent-output" || activity.kind === "reasoning");
+    if (canSimulate) {
+      const characters = [...activity.text!];
+      const chunkSize = Math.max(1, Math.floor(simulatedChunkSize));
+      const simulated: ReplayPoint[] = [];
+      for (let length = chunkSize; length < characters.length; length += chunkSize) {
+        simulated.push({
+          activity,
+          activityIndex,
+          observedAt: activity.timestamp,
+          streamSource: "simulated",
+          simulatedTextLength: length
+        });
+      }
+      simulated.push({
+        activity,
+        activityIndex,
+        observedAt: activity.timestamp,
+        streamSource: "simulated",
+        simulatedTextLength: characters.length
+      });
+      return simulated;
+    }
+    return [{
       activity,
       activityIndex,
-      deliveryChunkIndex,
-      observedAt: chunk.timestamp ?? activity.timestamp,
-      offsetMs: chunk.offsetMs
-    }));
+      observedAt: activity.timestamp,
+      streamSource: "event" as const
+    }];
   });
   const observedTimes = points.map(({ observedAt, offsetMs }) => {
     if (observedAt) return Date.parse(observedAt);
@@ -169,7 +220,10 @@ export function deriveReplayFrames(
     const hasObserved = Number.isFinite(observed);
     let idleGapCompressed = false;
     if (frameIndex > 0) {
-      if (hasObserved && previousObserved !== undefined) {
+      const previousPoint = points[frameIndex - 1];
+      if (point.streamSource === "simulated" && previousPoint?.activity.id === point.activity.id) {
+        displayOffsetMs += simulatedChunkMs;
+      } else if (hasObserved && previousObserved !== undefined) {
         const gap = Math.max(0, observed! - previousObserved);
         idleGapCompressed = gap > maximumDisplayedIdleMs;
         displayOffsetMs += Math.min(gap, maximumDisplayedIdleMs);
@@ -183,7 +237,9 @@ export function deriveReplayFrames(
       threadId: point.activity.threadId,
       index: point.activityIndex,
       sourceOrder: point.activity.sourceOrder,
+      streamSource: point.streamSource,
       ...(point.deliveryChunkIndex !== undefined ? { deliveryChunkIndex: point.deliveryChunkIndex } : {}),
+      ...(point.simulatedTextLength !== undefined ? { simulatedTextLength: point.simulatedTextLength } : {}),
       ...(hasObserved
         ? {
             ...(point.observedAt ? { observedAt: point.observedAt } : {}),
@@ -191,7 +247,7 @@ export function deriveReplayFrames(
           }
         : {}),
       displayOffsetMs,
-      timing: hasObserved ? "evidenced" : "step",
+      timing: point.streamSource === "simulated" ? "simulated" : hasObserved ? "evidenced" : "step",
       idleGapCompressed
     };
   });

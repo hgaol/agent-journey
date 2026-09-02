@@ -224,6 +224,14 @@ _Avoid_: Assistant message, reasoning
 Optional evidence describing the incremental chunks or snapshots through which one semantic Activity was delivered. It supports progressive Replay without turning transport fragments into duplicate Activities.
 _Avoid_: Activity list, simulated streaming
 
+**Recorded Streaming**:
+Progressive Replay of content using chunk order and timing preserved in a Delivery Trace.
+_Avoid_: Typewriter effect, reconstructed cadence
+
+**Simulated Streaming**:
+An explicitly labeled, optional TUI-like character reveal used when no Delivery Trace exists. It is presentation only and never represented as evidenced timing.
+_Avoid_: Recorded Streaming, faithful cadence
+
 **Reasoning**:
 Deliberation or a reasoning summary attributed as such by Source Evidence. AgentJourney does not infer Reasoning from ordinary Agent Output.
 _Avoid_: Chain of thought guess, commentary

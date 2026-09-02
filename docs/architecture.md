@@ -69,7 +69,7 @@ The production Journey route uses the terminal-native debugger layout chosen fro
 
 Canonical Activities form a partially ordered graph. Source Order is deterministic within streams; causal links constrain tool results, parent activity, approvals, and thread relationships. A deterministic Display Order is derived without claiming unknown cross-thread chronology.
 
-Turns are evidenced when native turn IDs exist and otherwise marked inferred. Delivery Trace chunks remain attached to one semantic Activity. Replay frames use evidenced timestamps/chunk offsets; untimed Interpretations permit manual stepping but not synthetic autoplay. Long idle intervals are visibly compressed.
+Turns are evidenced when native turn IDs exist and otherwise marked inferred. Delivery Trace chunks remain attached to one semantic Activity. Replay frames use evidenced timestamps/chunk offsets; untimed Interpretations permit manual stepping in evidence-based modes. The user may explicitly opt into Simulated Streaming, which creates deterministic character-reveal frames labeled `simulated` without changing Canonical Activity or the Fidelity Manifest. Long idle intervals are visibly compressed.
 
 ## Portability
 

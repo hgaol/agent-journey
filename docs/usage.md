@@ -54,7 +54,15 @@ Sensitive Findings are masked by default. Reveal actions are local and explicit;
 
 ## Replay
 
-Replay uses the Activity Graph rather than inventing a flat chronology. Prompts, reasoning, tool calls/results, status transitions, and Delivery Trace chunks appear in the terminal pane as their evidenced frames are reached. The timeline shows one lane per Agent Thread. Evidenced timestamps and Delivery Trace chunks drive automatic playback; a Journey without complete timing supports manual stepping only. Long idle gaps are compressed and indicated rather than silently rewritten.
+Replay uses the Activity Graph rather than inventing a flat chronology. Prompts, reasoning, tool calls/results, status transitions, and Delivery Trace chunks appear in the terminal pane as their frames are reached. The timeline shows one lane per Agent Thread, and long idle gaps are visibly compressed.
+
+The **Content streaming** selector offers:
+
+- **Event steps** — each semantic Activity appears as one unit at its evidenced timestamp.
+- **Recorded stream** — available only when the Fidelity Manifest reports Delivery Traces; preserved chunks appear in recorded order and timing.
+- **Simulated TUI stream** — opt-in character streaming for agent output and reasoning when native chunks were not persisted. The dock displays `SIMULATED cadence`; this is presentation only and does not become Source Evidence.
+
+Without complete evidenced timing, event and recorded modes remain manual-step-only. Simulated mode may autoplay because the user explicitly requested synthetic presentation.
 
 ## Export and import
 

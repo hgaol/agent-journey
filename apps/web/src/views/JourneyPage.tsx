@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { builtInStylePacks, rendererForSourceAgent } from "@agentjourney/builtin-renderers";
 import type { ActivityDocument, StageDocument } from "@agentjourney/contracts";
 import type { RendererIntent } from "@agentjourney/plugin-sdk";
+import type { ReplayStreamMode } from "@agentjourney/activity-graph";
 import { api, saveDownload } from "../api.js";
 import { AnnotationDialog } from "../components/AnnotationDialog.js";
 import { CoveragePanel } from "../components/CoveragePanel.js";
@@ -61,6 +62,7 @@ export function JourneyPage(): React.ReactNode {
   );
   const [rendererId, setRendererId] = useState<string>();
   const [view, setView] = useState<"review" | "replay">("review");
+  const [streamMode, setStreamMode] = useState<ReplayStreamMode>("events");
   const [stageSearch, setStageSearch] = useState("");
   const [selectedActivityId, setSelectedActivityId] = useState<string>();
   const [evidenceSelection, setEvidenceSelection] = useState<{
@@ -71,7 +73,7 @@ export function JourneyPage(): React.ReactNode {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showCoverage, setShowCoverage] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
-  const replay = useReplay(journey.data?.stage.activities ?? []);
+  const replay = useReplay(journey.data?.stage.activities ?? [], streamMode);
 
   useEffect(() => {
     if (!journey.data || rendererId || pluginRenderers.isLoading) return;
@@ -104,6 +106,7 @@ export function JourneyPage(): React.ReactNode {
       presentation: {
         redacted: !reveal,
         view,
+        streamMode,
         ...(stageSearch.trim() ? { searchQuery: stageSearch.trim() } : {}),
         ...(selectedActivityId ? { selectedActivityId } : {}),
         ...(view === "replay" && playheadFrame
@@ -111,12 +114,15 @@ export function JourneyPage(): React.ReactNode {
               playheadActivityId: playheadFrame.activityId,
               ...(playheadFrame.deliveryChunkIndex !== undefined
                 ? { playheadDeliveryChunk: playheadFrame.deliveryChunkIndex }
+                : {}),
+              ...(playheadFrame.simulatedTextLength !== undefined
+                ? { playheadSimulatedTextLength: playheadFrame.simulatedTextLength }
                 : {})
             }
           : {})
       }
     };
-  }, [journey.data, replay.frames, replay.index, reveal, selectedActivityId, stageSearch, view]);
+  }, [journey.data, replay.frames, replay.index, reveal, selectedActivityId, stageSearch, streamMode, view]);
 
   const renderer = renderers.find(({ manifest }) => manifest.id === rendererId)
     ?? rendererForSourceAgent(journey.data?.summary.sourceAgent ?? "neutral-fallback");
@@ -132,6 +138,8 @@ export function JourneyPage(): React.ReactNode {
       rendererStage?.presentation.view,
       rendererStage?.presentation.playheadActivityId,
       rendererStage?.presentation.playheadDeliveryChunk,
+      rendererStage?.presentation.playheadSimulatedTextLength,
+      rendererStage?.presentation.streamMode,
       rendererStage?.presentation.searchQuery,
       rendererStage?.presentation.selectedActivityId,
       rendererStage?.presentation.redacted
@@ -220,9 +228,11 @@ export function JourneyPage(): React.ReactNode {
   const detail = journey.data;
   const maxPlayhead = Math.max(0, replay.frames.length - 1);
   const currentFrame = replay.frames[replay.index];
+  const transportFrame = view === "replay" ? currentFrame : replay.frames.at(-1);
   const selectedActivity = detail.stage.activities.find(({ id }) => id === selectedActivityId)
-    ?? detail.stage.activities.find(({ id }) => id === currentFrame?.activityId)
-    ?? detail.stage.activities.at(-1);
+    ?? (view === "replay"
+      ? detail.stage.activities.find(({ id }) => id === currentFrame?.activityId)
+      : detail.stage.activities.at(-1));
   const selectedThreadId = selectedActivity?.threadId ?? "main";
   const selectedTurn = detail.stage.turns.find((turn) =>
     selectedActivity ? turn.activityIds.includes(selectedActivity.id) : false
@@ -390,6 +400,7 @@ export function JourneyPage(): React.ReactNode {
             <code>{detail.summary.workspace ?? "~"}</code>
             <span>{detail.interpretation.journey.gitBranch ?? "no branch"}</span>
             <span>{selectedRevision?.identityConflict ? "⚠ identity conflict" : "source evidence"}</span>
+            <span>{view === "replay" ? `${streamMode} stream` : "full transcript"}</span>
           </header>
 
           {selectedRevision?.identityConflict && (
@@ -540,7 +551,9 @@ export function JourneyPage(): React.ReactNode {
             className="terminal-play"
             disabled={view !== "replay" || !replay.canAutoPlay}
             title={replay.canAutoPlay
-              ? "Replay evidenced timing"
+              ? streamMode === "simulated"
+                ? "Replay with clearly labeled simulated TUI streaming"
+                : "Replay evidenced timing"
               : "This Interpretation supports manual stepping only"}
             onClick={togglePlayback}
           >
@@ -570,8 +583,22 @@ export function JourneyPage(): React.ReactNode {
           >
             ›
           </button>
-          <code>{replayClock(currentFrame?.observedOffsetMs)}</code>
+          <code>{replayClock(transportFrame?.observedOffsetMs)}</code>
           <span>{view === "replay" ? replay.index + 1 : replay.frames.length}/{replay.frames.length}</span>
+          <select
+            aria-label="Content streaming"
+            value={streamMode}
+            onChange={(event) => {
+              setView("replay");
+              setStreamMode(event.target.value as ReplayStreamMode);
+            }}
+          >
+            <option value="events">event steps</option>
+            <option value="recorded" disabled={!detail.stage.fidelity.deliveryTraces}>
+              recorded stream{detail.stage.fidelity.deliveryTraces ? "" : " · unavailable"}
+            </option>
+            <option value="simulated">simulated TUI stream</option>
+          </select>
           <select
             aria-label="Replay speed"
             value={replay.speed}
@@ -583,11 +610,17 @@ export function JourneyPage(): React.ReactNode {
             <option value={4}>4×</option>
           </select>
           <small>
-            {currentFrame?.timing === "evidenced" ? "timestamp" : "manual step"}
-            {currentFrame?.deliveryChunkIndex !== undefined
-              ? ` · stream chunk ${currentFrame.deliveryChunkIndex + 1}`
-              : ""}
-            {currentFrame?.idleGapCompressed ? " · idle compressed" : ""}
+            {transportFrame?.timing === "simulated"
+              ? "SIMULATED cadence"
+              : transportFrame?.timing === "evidenced"
+                ? "evidenced timestamp"
+                : "manual step"}
+            {transportFrame?.deliveryChunkIndex !== undefined
+              ? ` · recorded chunk ${transportFrame.deliveryChunkIndex + 1}`
+              : transportFrame?.simulatedTextLength !== undefined
+                ? ` · ${transportFrame.simulatedTextLength} characters`
+                : ""}
+            {transportFrame?.idleGapCompressed ? " · idle compressed" : ""}
           </small>
         </div>
         <ReplayTimeline

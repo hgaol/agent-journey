@@ -69,15 +69,22 @@ export function projectStageDocument(documentValue: StageDocument): StageDocumen
   const activities = documentValue.activities.slice(0, index < 0 ? 1 : index + 1);
   const current = activities.at(-1);
   const chunkIndex = documentValue.presentation.playheadDeliveryChunk;
-  const projectedActivities = current && chunkIndex !== undefined && current.deliveryTrace
-    ? [
-        ...activities.slice(0, -1),
-        {
-          ...current,
-          text: current.deliveryTrace.slice(0, chunkIndex + 1).map(({ text }) => text).join("")
-        }
-      ]
-    : activities;
+  const simulatedTextLength = documentValue.presentation.playheadSimulatedTextLength;
+  let projectedActivities = activities;
+  if (current && simulatedTextLength !== undefined && current.text !== undefined) {
+    projectedActivities = [
+      ...activities.slice(0, -1),
+      { ...current, text: [...current.text].slice(0, simulatedTextLength).join("") }
+    ];
+  } else if (current && chunkIndex !== undefined && current.deliveryTrace) {
+    projectedActivities = [
+      ...activities.slice(0, -1),
+      {
+        ...current,
+        text: current.deliveryTrace.slice(0, chunkIndex + 1).map(({ text }) => text).join("")
+      }
+    ];
+  }
   const visibleIds = new Set(projectedActivities.map(({ id }) => id));
   return {
     ...documentValue,

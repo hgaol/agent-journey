@@ -34,15 +34,27 @@ describe("Activity Graph", () => {
   });
 
   it("creates one Replay frame per evidenced Delivery Trace chunk", () => {
-    const frames = deriveReplayFrames([
-      activity("stream", "agent-output", 1, {
-        deliveryTrace: [
-          { sequence: 0, text: "Hel", offsetMs: 0 },
-          { sequence: 1, text: "lo", offsetMs: 100 }
-        ]
-      })
-    ]);
-    expect(frames.map(({ deliveryChunkIndex }) => deliveryChunkIndex)).toEqual([0, 1]);
+    const streamed = activity("stream", "agent-output", 1, {
+      text: "Hello",
+      deliveryTrace: [
+        { sequence: 0, text: "Hel", offsetMs: 0 },
+        { sequence: 1, text: "lo", offsetMs: 100 }
+      ]
+    });
+    const eventFrames = deriveReplayFrames([streamed], { streamMode: "events" });
+    const recordedFrames = deriveReplayFrames([streamed], { streamMode: "recorded" });
+    expect(eventFrames).toHaveLength(1);
+    expect(recordedFrames.map(({ deliveryChunkIndex }) => deliveryChunkIndex)).toEqual([0, 1]);
+    expect(recordedFrames.every(({ streamSource }) => streamSource === "recorded")).toBe(true);
+  });
+
+  it("creates explicitly simulated TUI text frames without labeling them evidenced", () => {
+    const frames = deriveReplayFrames(
+      [activity("stream", "agent-output", 1, { text: "Hello world" })],
+      { streamMode: "simulated", simulatedChunkSize: 3 }
+    );
+    expect(frames.map(({ simulatedTextLength }) => simulatedTextLength)).toEqual([3, 6, 9, 11]);
+    expect(frames.every(({ timing, streamSource }) => timing === "simulated" && streamSource === "simulated")).toBe(true);
   });
 
   it("compares interpretations by stable Evidence Anchor", () => {

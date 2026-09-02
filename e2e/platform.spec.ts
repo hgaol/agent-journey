@@ -40,6 +40,19 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
 });
 
+test("offers clearly labeled simulated TUI streaming when recorded chunks are unavailable", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Read the greeting file.").click();
+  const streaming = page.getByLabel("Content streaming");
+  await expect(streaming.locator("option[value=recorded]")).toBeDisabled();
+  await streaming.selectOption("simulated");
+  await expect(page.locator(".terminal-pane-header")).toContainText("simulated stream");
+  await page.locator(".terminal-play").click();
+  await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED cadence", {
+    timeout: 5000
+  });
+});
+
 test("terminal transcript fills the available center pane", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Read the greeting file.").click();

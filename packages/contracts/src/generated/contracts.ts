@@ -159,6 +159,8 @@ export interface StageDocument {
     view: "review" | "replay";
     playheadActivityId?: string;
     playheadDeliveryChunk?: number;
+    playheadSimulatedTextLength?: number;
+    streamMode?: "events" | "recorded" | "simulated";
     searchQuery?: string;
     selectedActivityId?: string;
   };

@@ -35,6 +35,7 @@ All defined milestones are implemented and verified. Follow-up work should be dr
 - [x] source-native terminal transcript with Thread/Turn rail and Activity inspector
 - [x] causal Activity Graph linearization with deterministic non-chronological tie breaking
 - [x] provenance-aware evidenced and inferred Turns
+- [x] selectable event-step, evidenced Recorded Streaming, and explicitly Simulated TUI Streaming modes
 - [x] Delivery Trace capture and chunk-level Replay frames
 - [x] Agent Thread preservation and multi-lane timeline
 - [x] dynamic Fork lineage resolution
