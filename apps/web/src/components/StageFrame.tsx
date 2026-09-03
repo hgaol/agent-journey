@@ -58,7 +58,7 @@ export function StageFrame(props: {
 
   return (
     <iframe
-      key={props.renderer.manifest.id}
+      key={`${props.renderer.manifest.id}:${props.document.presentation.view}`}
       ref={iframeRef}
       className={`journey-stage${props.fixedHeight ? " journey-stage-fixed" : ""}`}
       title={`${props.renderer.manifest.displayName} Journey Stage`}

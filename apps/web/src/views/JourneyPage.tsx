@@ -76,7 +76,7 @@ export function JourneyPage(): React.ReactNode {
   const [showCoverage, setShowCoverage] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showVideoExport, setShowVideoExport] = useState(false);
-  const replay = useReplay(journey.data?.stage.activities ?? [], streamMode);
+  const replay = useReplay(journey.data?.stage.activities ?? [], streamMode, view === "replay");
 
   useEffect(() => {
     if (!journey.data || rendererId || pluginRenderers.isLoading) return;
@@ -245,7 +245,7 @@ export function JourneyPage(): React.ReactNode {
 
   const enterReplay = (): void => {
     setView("replay");
-    replay.reset();
+    replay.restart();
     const first = replay.frames[0];
     if (first) setSelectedActivityId(first.activityId);
   };
@@ -435,7 +435,7 @@ export function JourneyPage(): React.ReactNode {
               <StageFrame
                 document={stage}
                 renderer={renderer}
-                rendererTree={rendererTree.data}
+                rendererTree={rendererTree.fetchStatus === "fetching" ? undefined : rendererTree.data}
                 fixedHeight
                 onIntent={handleIntent}
               />

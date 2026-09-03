@@ -43,7 +43,7 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByLabel("Agent Thread replay lanes")).toBeVisible();
   await expect(page.locator(".terminal-pane-header")).toContainText("REPLAY");
   await expect(page.locator(".terminal-transport > span")).toContainText("1/");
-  await page.locator(".terminal-play").click();
+  await expect(page.locator(".terminal-play")).toHaveText("Ⅱ");
   await expect(page.locator(".terminal-transport > span")).not.toContainText("1/");
   await page.getByRole("button", { name: "Evidence" }).click();
   await expect(page.getByRole("dialog", { name: "Source Evidence inspector" })).toBeVisible();
@@ -256,15 +256,30 @@ test("Copilot styling does not expose selectable empty reasoning rows", async ({
   await expect(stage.locator('.activity[data-native-name="permission-mode"]')).toBeHidden();
 });
 
+test("starts progressive Replay on the first switch from Review", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Read the greeting file.", { exact: true }).click();
+  const stage = page.frameLocator("iframe.journey-stage");
+  const finalAnswer = stage.getByText("The focused greeting test failed.", { exact: true });
+  await expect(finalAnswer).toBeVisible();
+  await page.getByRole("button", { name: "REPLAY", exact: true }).click();
+  await expect(finalAnswer).toBeHidden();
+  await expect(stage.locator(".activity")).toHaveCount(1);
+  await expect(page.locator(".terminal-play")).toHaveText("Ⅱ");
+});
+
 test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Inspect greeting module", { exact: true }).click();
   await page.getByRole("button", { name: "REPLAY", exact: true }).click();
-  await expect(page.locator(".terminal-play")).toBeEnabled();
+  const play = page.locator(".terminal-play");
+  await expect(play).toHaveText("Ⅱ");
+  await play.click();
+  await page.getByLabel("Replay playhead").fill("0");
   await expect(page.locator(".terminal-transport > small")).toContainText(
     "untimed · source-order placement"
   );
-  await page.locator(".terminal-play").click();
+  await play.click();
   await expect(page.locator(".terminal-transport > span")).not.toContainText("1/");
 });
 
@@ -279,7 +294,7 @@ test("offers clearly labeled simulated TUI streaming when recorded chunks are un
   await expect(streamingSpeed).toBeVisible();
   await streamingSpeed.selectOption("8");
   await expect(streamingSpeed).toHaveValue("8");
-  await page.locator(".terminal-play").click();
+  await expect(page.locator(".terminal-play")).toHaveText("Ⅱ");
   await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED cadence", {
     timeout: 5000
   });

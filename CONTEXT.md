@@ -125,7 +125,7 @@ The default presentation in which the complete selected Journey Revision is imme
 _Avoid_: Static replay, transcript mode
 
 **Replay View**:
-An optional progressive presentation in which a playhead traverses the Activity Graph without inventing unsupported timing.
+An optional progressive presentation in which a playhead traverses the Activity Graph without inventing unsupported timing. Entering Replay restarts at the first frame and begins automatically when the selected mode has autoplay-safe timing; manual-only histories remain paused.
 _Avoid_: Review View, simulated terminal recording
 
 **Playhead**:

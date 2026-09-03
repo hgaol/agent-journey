@@ -60,7 +60,7 @@ Each Journey opens in a **Terminal Replay Debugger**: terminal-native transcript
 - Choose event steps, evidenced Recorded Streaming, or clearly labeled Simulated TUI Streaming during Replay; configure content streaming independently from Timeline Speed between 0.5× and 16×, while untimed control records use explicit Source-Order Placement.
 - Compare revisions or interpretations by stable Evidence Anchor.
 - Add display titles, tags, Projects, bookmarks, and reviewer notes through a separate Review Overlay.
-- Review the complete Journey immediately, or Replay through evidenced timing, Delivery Traces, Agent Threads, and compressed idle gaps.
+- Review the complete Journey immediately, or enter Replay to restart at frame zero and automatically progress through evidenced timing, Delivery Traces, Agent Threads, and compressed idle gaps.
 - Inspect factual Coverage Reports and capability-based Fidelity Manifests.
 
 ## Renderers

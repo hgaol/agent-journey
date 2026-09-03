@@ -54,7 +54,7 @@ Sensitive Findings are masked by default. Reveal actions are local and explicit;
 
 ## Replay
 
-Replay uses the Activity Graph rather than inventing a flat chronology. Prompts, reasoning, tool calls/results, status transitions, and Delivery Trace chunks appear in the terminal pane as their frames are reached. The timeline shows one lane per Agent Thread, and long idle gaps are visibly compressed.
+Replay uses the Activity Graph rather than inventing a flat chronology. Selecting **REPLAY** starts again from the first frame and automatically plays when timing is supported; the first frame is held briefly so the complete Review transcript cannot appear to carry into Replay. Prompts, reasoning, tool calls/results, status transitions, and Delivery Trace chunks appear in the terminal pane as their frames are reached. The timeline shows one lane per Agent Thread, and long idle gaps are visibly compressed.
 
 The **Content streaming** selector offers:
 

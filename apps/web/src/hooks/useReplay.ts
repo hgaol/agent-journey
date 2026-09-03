@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ActivityDocument } from "@agentjourney/contracts";
 import {
   canAutoPlayReplay,
@@ -9,7 +9,8 @@ import {
 
 export function useReplay(
   activities: readonly ActivityDocument[],
-  streamMode: ReplayStreamMode = "events"
+  streamMode: ReplayStreamMode = "events",
+  autoStartOnModeChange = false
 ) {
   const frames = useMemo(
     () => deriveReplayFrames(activities, { streamMode }),
@@ -19,12 +20,17 @@ export function useReplay(
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [streamingSpeed, setStreamingSpeed] = useState(1);
+  const [holdingFirstFrame, setHoldingFirstFrame] = useState(false);
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
+  const previousStreamMode = useRef(streamMode);
 
   useEffect(() => {
+    if (previousStreamMode.current === streamMode) return;
+    previousStreamMode.current = streamMode;
     setIndex(0);
-    setPlaying(false);
-  }, [streamMode]);
+    setHoldingFirstFrame(autoStartOnModeChange);
+    setPlaying(autoStartOnModeChange && canAutoPlay);
+  }, [autoStartOnModeChange, canAutoPlay, streamMode]);
 
   useEffect(() => {
     if (index > Math.max(0, frames.length - 1)) setIndex(Math.max(0, frames.length - 1));
@@ -37,13 +43,17 @@ export function useReplay(
     }
     const current = frames[index];
     const next = frames[index + 1];
-    const gap = replayFrameDelay(current!, next!, {
+    const replayGap = replayFrameDelay(current!, next!, {
       timelineSpeed: speed,
       streamingSpeed
     });
-    const timer = window.setTimeout(() => setIndex((value) => value + 1), gap);
+    const gap = holdingFirstFrame && index === 0 ? Math.max(400, replayGap) : replayGap;
+    const timer = window.setTimeout(() => {
+      setHoldingFirstFrame(false);
+      setIndex((value) => value + 1);
+    }, gap);
     return () => window.clearTimeout(timer);
-  }, [canAutoPlay, frames, index, playing, speed, streamingSpeed]);
+  }, [canAutoPlay, frames, holdingFirstFrame, index, playing, speed, streamingSpeed]);
 
   return {
     frames,
@@ -58,6 +68,11 @@ export function useReplay(
     current: frames[index],
     canAutoPlay,
     streamMode,
-    reset: () => { setIndex(0); setPlaying(false); }
+    restart: (autoPlay = canAutoPlay) => {
+      setIndex(0);
+      setHoldingFirstFrame(true);
+      setPlaying(autoPlay && frames.length > 1);
+    },
+    reset: () => { setIndex(0); setPlaying(false); setHoldingFirstFrame(false); }
   };
 }
