@@ -236,8 +236,12 @@ _Avoid_: Typewriter effect, reconstructed cadence
 An explicitly labeled, optional TUI-like character reveal used when no Delivery Trace exists. It is presentation only and never represented as evidenced timing.
 _Avoid_: Recorded Streaming, faithful cadence
 
+**Simulated Prompt Typing**:
+An explicitly selected presentation in which final Human Input text is revealed as a draft in the source-native composer, then moved into the transcript as submitted. It does not claim captured keystrokes and never sends the prompt to a Source Agent.
+_Avoid_: Recorded input, Agent Control, evidenced typing cadence
+
 **Streaming Speed**:
-A user-selected multiplier applied only to chunk transitions within Recorded or Simulated Streaming. It does not alter the timestamp-based intervals between separate Activities.
+A user-selected multiplier applied to chunk transitions within Recorded or Simulated Streaming and to Simulated Prompt Typing. It does not alter the timestamp-based intervals between separate Activities.
 _Avoid_: Timeline speed, source timing
 
 **Reasoning**:

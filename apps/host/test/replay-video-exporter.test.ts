@@ -70,6 +70,7 @@ describe("Replay video export", () => {
     expect(options).toMatchObject({ browser: "auto", quality: "720p", speed: 1, fps: 30, streamMode: "events" });
     expect(() => validateReplayVideoOptions({ ...options, speed: 3 })).toThrow(/speed/u);
     expect(() => validateReplayVideoOptions({ ...options, quality: "4k" })).toThrow(/quality/u);
+    expect(() => validateReplayVideoOptions({ ...options, promptTyping: "yes" })).toThrow(/Prompt typing/u);
   });
 
   it("falls back through Chrome and Edge, with optional Safari-compatible WebKit", () => {
@@ -90,6 +91,14 @@ describe("Replay video export", () => {
     const fast = planReplayVideo(stage(), { speed: 4, streamMode: "events" });
     expect(fast.frames.map(({ activityId }) => activityId)).toEqual(normal.frames.map(({ activityId }) => activityId));
     expect(fast.durationMs).toBeLessThan(normal.durationMs);
+  });
+
+  it("includes simulated prompt drafts only when explicitly selected", () => {
+    const instant = planReplayVideo(stage(), { speed: 1, streamMode: "events", promptTyping: false });
+    const typed = planReplayVideo(stage(), { speed: 1, streamMode: "events", promptTyping: true });
+    expect(instant.frames.some(({ simulatedInputTextLength }) => simulatedInputTextLength !== undefined)).toBe(false);
+    expect(typed.frames.some(({ simulatedInputTextLength }) => simulatedInputTextLength !== undefined)).toBe(true);
+    expect(typed.frames.some(({ inputSubmitted }) => inputSubmitted)).toBe(true);
   });
 
   it("requires an explicit simulated stream for fully untimed histories", () => {

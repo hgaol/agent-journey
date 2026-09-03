@@ -8,6 +8,10 @@ export interface ReplayOptions {
   stepMs?: number;
   simulatedChunkSize?: number;
   simulatedChunkMs?: number;
+  simulateHumanInput?: boolean;
+  simulatedInputChunkSize?: number;
+  simulatedInputChunkMs?: number;
+  simulatedInputSubmitMs?: number;
   sourceOrderStepMs?: number;
 }
 
@@ -23,6 +27,8 @@ export interface ReplayFrame {
   streamSource: "event" | "recorded" | "simulated";
   deliveryChunkIndex?: number;
   simulatedTextLength?: number;
+  simulatedInputTextLength?: number;
+  inputSubmitted?: boolean;
   idleGapCompressed: boolean;
 }
 
@@ -151,6 +157,9 @@ interface ReplayPoint {
   offsetMs?: number | undefined;
   deliveryChunkIndex?: number | undefined;
   simulatedTextLength?: number | undefined;
+  simulatedInputTextLength?: number | undefined;
+  inputSubmitted?: boolean | undefined;
+  simulatedStepMs?: number | undefined;
 }
 
 export function deriveReplayFrames(
@@ -163,6 +172,10 @@ export function deriveReplayFrames(
     stepMs = 700,
     simulatedChunkSize = 16,
     simulatedChunkMs = 45,
+    simulateHumanInput = false,
+    simulatedInputChunkSize = 1,
+    simulatedInputChunkMs = 45,
+    simulatedInputSubmitMs = 240,
     sourceOrderStepMs = 40
   } = options;
   const ordered = linearizeActivityGraph(activities);
@@ -176,6 +189,48 @@ export function deriveReplayFrames(
         offsetMs: chunk.offsetMs,
         streamSource: "recorded" as const
       }));
+    }
+    const canSimulateInput = simulateHumanInput
+      && activity.kind === "human-input"
+      && Boolean(activity.text);
+    if (canSimulateInput) {
+      const characters = [...activity.text!];
+      const chunkSize = Math.max(1, Math.floor(simulatedInputChunkSize));
+      const drafts: ReplayPoint[] = [{
+        activity,
+        activityIndex,
+        observedAt: activity.timestamp,
+        streamSource: "simulated" as const,
+        simulatedInputTextLength: 0,
+        simulatedStepMs: simulatedInputChunkMs
+      }];
+      for (let length = chunkSize; length < characters.length; length += chunkSize) {
+        drafts.push({
+          activity,
+          activityIndex,
+          observedAt: activity.timestamp,
+          streamSource: "simulated" as const,
+          simulatedInputTextLength: length,
+          simulatedStepMs: simulatedInputChunkMs
+        });
+      }
+      drafts.push({
+        activity,
+        activityIndex,
+        observedAt: activity.timestamp,
+        streamSource: "simulated" as const,
+        simulatedInputTextLength: characters.length,
+        simulatedStepMs: simulatedInputChunkMs
+      });
+      drafts.push({
+        activity,
+        activityIndex,
+        observedAt: activity.timestamp,
+        streamSource: "simulated" as const,
+        inputSubmitted: true,
+        simulatedStepMs: simulatedInputSubmitMs
+      });
+      return drafts;
     }
     const canSimulate = streamMode === "simulated"
       && Boolean(activity.text)
@@ -225,7 +280,7 @@ export function deriveReplayFrames(
     if (frameIndex > 0) {
       const previousPoint = points[frameIndex - 1];
       if (point.streamSource === "simulated" && previousPoint?.activity.id === point.activity.id) {
-        displayOffsetMs += simulatedChunkMs;
+        displayOffsetMs += point.simulatedStepMs ?? simulatedChunkMs;
       } else if (!hasObserved && hasObservedTimeline) {
         displayOffsetMs += sourceOrderStepMs;
       } else if (hasObserved && previousObserved !== undefined) {
@@ -245,6 +300,8 @@ export function deriveReplayFrames(
       streamSource: point.streamSource,
       ...(point.deliveryChunkIndex !== undefined ? { deliveryChunkIndex: point.deliveryChunkIndex } : {}),
       ...(point.simulatedTextLength !== undefined ? { simulatedTextLength: point.simulatedTextLength } : {}),
+      ...(point.simulatedInputTextLength !== undefined ? { simulatedInputTextLength: point.simulatedInputTextLength } : {}),
+      ...(point.inputSubmitted ? { inputSubmitted: true } : {}),
       ...(hasObserved
         ? {
             ...(point.observedAt ? { observedAt: point.observedAt } : {}),
@@ -298,9 +355,11 @@ export function canAutoPlayReplay(
 ): boolean {
   if (frames.length < 2) return false;
   if (streamMode === "simulated") return true;
-  const hasEvidencedTiming = frames.some(({ timing }) => timing === "evidenced");
+  const hasEvidencedTiming = frames.some(({ timing, observedAt }) =>
+    timing === "evidenced" || (timing === "simulated" && Boolean(observedAt))
+  );
   return hasEvidencedTiming && frames.every(({ timing }) =>
-    timing === "evidenced" || timing === "source-order"
+    timing === "evidenced" || timing === "source-order" || timing === "simulated"
   );
 }
 

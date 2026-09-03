@@ -62,7 +62,9 @@ The **Content streaming** selector offers:
 - **Recorded stream** — available only when the Fidelity Manifest reports Delivery Traces; preserved chunks appear in recorded order and timing.
 - **Simulated TUI stream** — opt-in fast sixteen-character streaming for agent output and reasoning when native chunks were not persisted. The dock displays `SIMULATED cadence`; this is presentation only and does not become Source Evidence.
 
-Recorded and simulated modes expose a separate **Streaming speed** selector from 0.5× through 16×. It changes only chunk transitions within the current response; the **Timeline speed** selector independently controls timestamp gaps between Activities.
+The **Prompt playback** selector can explicitly enable **simulated typing**: Human Input appears as a draft in the source-native composer, then moves into the transcript before the response. This is labeled simulation, uses the cadence speed, represents no recorded keystrokes, and sends nothing to the source agent.
+
+Recorded and simulated modes—and simulated prompt typing—expose a separate **Streaming speed** selector from 0.5× through 16×. It changes only chunk transitions within the current response; the **Timeline speed** selector independently controls timestamp gaps between Activities.
 
 When a session contains timestamps plus occasional untimed control records, Replay places those records by evidenced Source Order and labels the dock `untimed · source-order placement`; no timestamp is inferred. A wholly untimed session remains manual-step-only in event and recorded modes. Simulated mode may autoplay because the user explicitly requested synthetic presentation.
 
@@ -70,7 +72,7 @@ When a session contains timestamps plus occasional untimed control records, Repl
 
 - **Package** exports lossless `.agentjourney` evidence. Confirm the warning: the package is unencrypted and may contain secrets.
 - **HTML** exports escaped, self-contained presentation using a CSS-compatible selected renderer. Executable third-party renderer code is never embedded.
-- **MP4** opens a local export dialog for Style Pack, 720p/1080p/1440p quality, 0.5×–16× playback speed, 30/60 fps, event/recorded/simulated streaming, and redaction. Video is silent H.264, simulated cadence is labeled, and temporary frames remain local and are deleted after encoding. Rendering engine may be Automatic, Playwright Chromium, installed Google Chrome, installed Microsoft Edge, or Playwright WebKit. Automatic mode tries them in that order. WebKit is Safari-compatible but is not the installed Safari application; install it with `pnpm exec playwright install webkit`. The dialog shows overall percentage, current phase, and rendered-frame count while exporting. Set `AGENTJOURNEY_BROWSER_EXECUTABLE`, `AGENTJOURNEY_EDGE_EXECUTABLE`, or the legacy `AGENTJOURNEY_CHROME_EXECUTABLE` for a nonstandard Chromium-based executable.
+- **MP4** opens a local export dialog for Style Pack, 720p/1080p/1440p quality, 0.5×–16× playback speed, 30/60 fps, event/recorded/simulated streaming, optional simulated prompt typing, and redaction. Video is silent H.264, simulated cadence is labeled, and temporary frames remain local and are deleted after encoding. Rendering engine may be Automatic, Playwright Chromium, installed Google Chrome, installed Microsoft Edge, or Playwright WebKit. Automatic mode tries them in that order. WebKit is Safari-compatible but is not the installed Safari application; install it with `pnpm exec playwright install webkit`. The dialog shows overall percentage, current phase, and rendered-frame count while exporting. Set `AGENTJOURNEY_BROWSER_EXECUTABLE`, `AGENTJOURNEY_EDGE_EXECUTABLE`, or the legacy `AGENTJOURNEY_CHROME_EXECUTABLE` for a nonstandard Chromium-based executable.
 - Settings imports Journey Packages and labels their Interpretations external until locally reinterpreted.
 
 ## Archive operations

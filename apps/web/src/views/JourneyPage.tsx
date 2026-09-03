@@ -65,6 +65,7 @@ export function JourneyPage(): React.ReactNode {
   const [rendererId, setRendererId] = useState<string>();
   const [view, setView] = useState<"review" | "replay">("review");
   const [streamMode, setStreamMode] = useState<ReplayStreamMode>("events");
+  const [simulatePromptTyping, setSimulatePromptTyping] = useState(false);
   const [stageSearch, setStageSearch] = useState("");
   const [selectedActivityId, setSelectedActivityId] = useState<string>();
   const [evidenceSelection, setEvidenceSelection] = useState<{
@@ -76,7 +77,12 @@ export function JourneyPage(): React.ReactNode {
   const [showCoverage, setShowCoverage] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showVideoExport, setShowVideoExport] = useState(false);
-  const replay = useReplay(journey.data?.stage.activities ?? [], streamMode, view === "replay");
+  const replay = useReplay(
+    journey.data?.stage.activities ?? [],
+    streamMode,
+    view === "replay",
+    simulatePromptTyping
+  );
 
   useEffect(() => {
     if (!journey.data || rendererId || pluginRenderers.isLoading) return;
@@ -104,6 +110,15 @@ export function JourneyPage(): React.ReactNode {
   const stage = useMemo<StageDocument | undefined>(() => {
     if (!journey.data) return undefined;
     const playheadFrame = replay.frames[replay.index];
+    const inputActivity = playheadFrame?.simulatedInputTextLength !== undefined
+      ? journey.data.stage.activities.find(({ id }) => id === playheadFrame.activityId)
+      : undefined;
+    const simulatedInputDraft = inputActivity?.text !== undefined && playheadFrame?.simulatedInputTextLength !== undefined
+      ? {
+          activityId: inputActivity.id,
+          text: [...inputActivity.text].slice(0, playheadFrame.simulatedInputTextLength).join("")
+        }
+      : undefined;
     return {
       ...journey.data.stage,
       presentation: {
@@ -120,7 +135,8 @@ export function JourneyPage(): React.ReactNode {
                 : {}),
               ...(playheadFrame.simulatedTextLength !== undefined
                 ? { playheadSimulatedTextLength: playheadFrame.simulatedTextLength }
-                : {})
+                : {}),
+              ...(simulatedInputDraft ? { simulatedInputDraft } : {})
             }
           : {})
       }
@@ -404,7 +420,9 @@ export function JourneyPage(): React.ReactNode {
             <code>{detail.summary.workspace ?? "~"}</code>
             <span>{detail.interpretation.journey.gitBranch ?? "no branch"}</span>
             <span>{selectedRevision?.identityConflict ? "⚠ identity conflict" : "source evidence"}</span>
-            <span>{view === "replay" ? `${streamMode} stream` : "full transcript"}</span>
+            <span>{view === "replay"
+              ? `${streamMode} stream${simulatePromptTyping ? " · simulated prompt typing" : ""}`
+              : "full transcript"}</span>
           </header>
 
           {selectedRevision?.identityConflict && (
@@ -608,18 +626,29 @@ export function JourneyPage(): React.ReactNode {
             </option>
             <option value="simulated">simulated TUI stream</option>
           </select>
-          {streamMode !== "events" && (
+          <select
+            aria-label="Prompt playback"
+            value={simulatePromptTyping ? "simulated" : "instant"}
+            onChange={(event) => {
+              setView("replay");
+              setSimulatePromptTyping(event.target.value === "simulated");
+            }}
+          >
+            <option value="instant">prompt · instant</option>
+            <option value="simulated">prompt · simulated typing</option>
+          </select>
+          {(streamMode !== "events" || simulatePromptTyping) && (
             <select
               aria-label="Streaming speed"
               value={replay.streamingSpeed}
               onChange={(event) => replay.setStreamingSpeed(Number(event.target.value))}
             >
-              <option value={0.5}>stream 0.5×</option>
-              <option value={1}>stream 1×</option>
-              <option value={2}>stream 2×</option>
-              <option value={4}>stream 4×</option>
-              <option value={8}>stream 8×</option>
-              <option value={16}>stream 16×</option>
+              <option value={0.5}>cadence 0.5×</option>
+              <option value={1}>cadence 1×</option>
+              <option value={2}>cadence 2×</option>
+              <option value={4}>cadence 4×</option>
+              <option value={8}>cadence 8×</option>
+              <option value={16}>cadence 16×</option>
             </select>
           )}
           <select
@@ -645,7 +674,8 @@ export function JourneyPage(): React.ReactNode {
               : transportFrame?.simulatedTextLength !== undefined
                 ? ` · ${transportFrame.simulatedTextLength} characters`
                 : ""}
-            {streamMode !== "events" ? ` · stream ${replay.streamingSpeed}×` : ""}
+            {streamMode !== "events" || simulatePromptTyping ? ` · cadence ${replay.streamingSpeed}×` : ""}
+            {simulatePromptTyping ? " · SIMULATED prompt typing" : ""}
             {transportFrame?.idleGapCompressed ? " · idle compressed" : ""}
           </small>
           <div className="terminal-native-context">

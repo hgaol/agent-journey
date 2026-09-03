@@ -10,11 +10,12 @@ import {
 export function useReplay(
   activities: readonly ActivityDocument[],
   streamMode: ReplayStreamMode = "events",
-  autoStartOnModeChange = false
+  autoStartOnModeChange = false,
+  simulateHumanInput = false
 ) {
   const frames = useMemo(
-    () => deriveReplayFrames(activities, { streamMode }),
-    [activities, streamMode]
+    () => deriveReplayFrames(activities, { streamMode, simulateHumanInput }),
+    [activities, simulateHumanInput, streamMode]
   );
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -22,15 +23,16 @@ export function useReplay(
   const [streamingSpeed, setStreamingSpeed] = useState(1);
   const [holdingFirstFrame, setHoldingFirstFrame] = useState(false);
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
-  const previousStreamMode = useRef(streamMode);
+  const replayVariant = `${streamMode}:${simulateHumanInput ? "typed-prompts" : "instant-prompts"}`;
+  const previousReplayVariant = useRef(replayVariant);
 
   useEffect(() => {
-    if (previousStreamMode.current === streamMode) return;
-    previousStreamMode.current = streamMode;
+    if (previousReplayVariant.current === replayVariant) return;
+    previousReplayVariant.current = replayVariant;
     setIndex(0);
     setHoldingFirstFrame(autoStartOnModeChange);
     setPlaying(autoStartOnModeChange && canAutoPlay);
-  }, [autoStartOnModeChange, canAutoPlay, streamMode]);
+  }, [autoStartOnModeChange, canAutoPlay, replayVariant]);
 
   useEffect(() => {
     if (index > Math.max(0, frames.length - 1)) setIndex(Math.max(0, frames.length - 1));

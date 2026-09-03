@@ -239,7 +239,7 @@ test("GitHub Copilot CLI renderer follows its native colorful TUI hierarchy", as
   await expect(stage.locator(".stage-native-workspace")).toHaveText("/workspace/acme");
   await expect(stage.locator(".stage-native-workspace")).toBeVisible();
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
-  await expect(stage.locator(".stage-native-composer > span")).toBeHidden();
+  await expect(stage.locator(".stage-native-composer-marker")).toBeHidden();
   await expect(stage.locator(".stage-native-footer-key")).toHaveCount(4);
   await expect(stage.locator(".stage-native-footer-separator")).toHaveText(" · ");
   await expect(stage.locator(".stage-native-footer-effort")).toHaveText("Medium");
@@ -266,6 +266,23 @@ test("starts progressive Replay on the first switch from Review", async ({ page 
   await expect(finalAnswer).toBeHidden();
   await expect(stage.locator(".activity")).toHaveCount(1);
   await expect(page.locator(".terminal-play")).toHaveText("Ⅱ");
+});
+
+test("simulates prompt typing in the native composer before submission", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Read the greeting file.", { exact: true }).click();
+  const stage = page.frameLocator("iframe.journey-stage");
+  await page.getByLabel("Prompt playback").selectOption("simulated");
+  await expect(page.locator(".terminal-pane-header")).toContainText("simulated prompt typing");
+  const draft = stage.locator(".stage-native-composer-draft");
+  await expect(draft).toHaveText(/.+/u, { timeout: 5_000 });
+  const play = page.locator(".terminal-play");
+  await play.click();
+  await expect(stage.locator('.activity[data-kind="human-input"]')).toHaveCount(0);
+  await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED prompt typing");
+  await play.click();
+  await expect(stage.locator('.activity[data-kind="human-input"]').getByText("Read the greeting file.", { exact: true })).toBeVisible({ timeout: 5_000 });
+  await expect(draft).toHaveText("");
 });
 
 test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {
@@ -298,7 +315,7 @@ test("offers clearly labeled simulated TUI streaming when recorded chunks are un
   await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED cadence", {
     timeout: 5000
   });
-  await expect(page.locator(".terminal-transport > small")).toContainText("stream 8×");
+  await expect(page.locator(".terminal-transport > small")).toContainText("cadence 8×");
 });
 
 test("exports a configurable source-native Replay as MP4", async ({ page }) => {
@@ -317,6 +334,7 @@ test("exports a configurable source-native Replay as MP4", async ({ page }) => {
   await dialog.getByLabel("Playback speed").selectOption("8");
   await dialog.getByLabel("Frame rate").selectOption("30");
   await dialog.getByLabel("Replay content").selectOption("events");
+  await dialog.getByLabel("Simulate user typing before prompt submission").check();
   const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
   await dialog.getByRole("button", { name: "Export MP4" }).click();
   const progress = dialog.getByRole("progressbar", { name: "MP4 export progress" });

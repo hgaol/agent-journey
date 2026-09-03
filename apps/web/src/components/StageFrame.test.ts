@@ -54,6 +54,20 @@ describe("projectStageDocument", () => {
     expect(() => new Function(STAGE_SCRIPT)).not.toThrow();
   });
 
+  it("keeps a simulated human draft in the composer until its submitted frame", () => {
+    const input = stage();
+    input.presentation = {
+      redacted: true,
+      view: "replay",
+      streamMode: "events",
+      playheadActivityId: "human",
+      simulatedInputDraft: { activityId: "human", text: "Pro" }
+    };
+    const projected = projectStageDocument(input);
+    expect(projected.activities).toHaveLength(0);
+    expect(projected.presentation.simulatedInputDraft?.text).toBe("Pro");
+  });
+
   it("reveals only recorded Delivery Trace chunks reached by the playhead", () => {
     const input = stage();
     input.presentation = {

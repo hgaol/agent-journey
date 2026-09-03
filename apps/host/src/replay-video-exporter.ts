@@ -90,6 +90,7 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
   if (!([0.5, 1, 2, 4, 8, 16] as const).includes(speed as never)) throw new Error("Unsupported video speed");
   if (fps !== 30 && fps !== 60) throw new Error("Unsupported frame rate");
   if (!(["events", "recorded", "simulated"] as const).includes(streamMode as never)) throw new Error("Unsupported streaming mode");
+  if (input.promptTyping !== undefined && typeof input.promptTyping !== "boolean") throw new Error("Prompt typing selection must be boolean");
   if (typeof input.reveal !== "boolean") throw new Error("Video redaction selection is required");
   return {
     rendererId: input.rendererId,
@@ -99,6 +100,7 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
     speed: speed as ReplayVideoExportOptionsDocument["speed"],
     fps,
     streamMode: streamMode as ReplayVideoExportOptionsDocument["streamMode"],
+    promptTyping: input.promptTyping === true,
     reveal: input.reveal,
     ...(typeof input.revisionId === "string" ? { revisionId: input.revisionId } : {}),
     ...(typeof input.interpretationId === "string" ? { interpretationId: input.interpretationId } : {})
@@ -107,12 +109,15 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
 
 export function planReplayVideo(
   stage: StageDocument,
-  options: Pick<ReplayVideoExportOptionsDocument, "speed" | "streamMode">
+  options: Pick<ReplayVideoExportOptionsDocument, "speed" | "streamMode" | "promptTyping">
 ): ReplayVideoFramePlan {
-  const frames = deriveReplayFrames(stage.activities, { streamMode: options.streamMode });
+  const frames = deriveReplayFrames(stage.activities, {
+    streamMode: options.streamMode,
+    simulateHumanInput: options.promptTyping === true
+  });
   if (frames.length === 0) throw new Error("This Journey has no Activities to export");
   if (frames.length > MAX_UNIQUE_FRAMES) {
-    throw new Error(`Replay contains ${frames.length} frames; choose Event steps or a shorter Journey (maximum ${MAX_UNIQUE_FRAMES})`);
+    throw new Error(`Replay contains ${frames.length} frames; choose Event steps, disable simulated prompt typing, or use a shorter Journey (maximum ${MAX_UNIQUE_FRAMES})`);
   }
   if (frames.length > 1 && !canAutoPlayReplay(frames, options.streamMode)) {
     throw new Error("This Journey has no evidenced Replay timing; choose Simulated TUI stream for MP4 export");
@@ -135,6 +140,15 @@ function stageAtFrame(
   frame: ReplayFrame,
   streamMode: ReplayVideoExportOptionsDocument["streamMode"]
 ): StageDocument {
+  const inputActivity = frame.simulatedInputTextLength !== undefined
+    ? stage.activities.find(({ id }) => id === frame.activityId)
+    : undefined;
+  const simulatedInputDraft = inputActivity?.text !== undefined && frame.simulatedInputTextLength !== undefined
+    ? {
+        activityId: inputActivity.id,
+        text: [...inputActivity.text].slice(0, frame.simulatedInputTextLength).join("")
+      }
+    : undefined;
   return projectStageDocument({
     ...stage,
     presentation: {
@@ -143,7 +157,8 @@ function stageAtFrame(
       streamMode,
       playheadActivityId: frame.activityId,
       ...(frame.deliveryChunkIndex !== undefined ? { playheadDeliveryChunk: frame.deliveryChunkIndex } : {}),
-      ...(frame.simulatedTextLength !== undefined ? { playheadSimulatedTextLength: frame.simulatedTextLength } : {})
+      ...(frame.simulatedTextLength !== undefined ? { playheadSimulatedTextLength: frame.simulatedTextLength } : {}),
+      ...(simulatedInputDraft ? { simulatedInputDraft } : {})
     }
   });
 }
@@ -237,7 +252,7 @@ async function addExportBadge(
     badge.textContent = `${label} · ${redaction}`;
     document.body.append(badge);
   }, {
-    label: `${rendererName.toUpperCase()} · ${options.quality.toUpperCase()} · ${options.fps} FPS · ${mode} · ${options.speed}×`,
+    label: `${rendererName.toUpperCase()} · ${options.quality.toUpperCase()} · ${options.fps} FPS · ${mode}${options.promptTyping ? " · SIMULATED PROMPT TYPING" : ""} · ${options.speed}×`,
     redaction: options.reveal ? "UNREDACTED" : "REDACTED"
   });
   await page.addStyleTag({ content: "#agentjourney-video-badge{position:fixed;z-index:2147483647;top:10px;right:10px;padding:5px 7px;border:1px solid #ffffff2b;border-radius:3px;background:#090b0dcc;color:#d4d4d4;font:10px ui-monospace,monospace;letter-spacing:.06em}" });

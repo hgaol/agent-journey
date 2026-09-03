@@ -26,6 +26,7 @@ export function VideoExportDialog(props: {
   const [streamMode, setStreamMode] = useState<ReplayVideoExportOptionsDocument["streamMode"]>(
     props.initialStreamMode
   );
+  const [promptTyping, setPromptTyping] = useState(false);
   const [rendererId, setRendererId] = useState(props.rendererId);
   const [reveal, setReveal] = useState(props.reveal);
   const [exporting, setExporting] = useState(false);
@@ -76,6 +77,7 @@ export function VideoExportDialog(props: {
         speed,
         fps,
         streamMode,
+        promptTyping,
         reveal,
         revisionId: props.revisionId,
         interpretationId: props.interpretationId
@@ -157,6 +159,11 @@ export function VideoExportDialog(props: {
           </select>
           <small>Simulated streaming is permanently labeled in the exported video.</small>
         </label>
+        <label className="checkbox-label video-export-prompt-typing">
+          <input type="checkbox" checked={promptTyping} onChange={(event) => setPromptTyping(event.target.checked)} disabled={exporting} />
+          Simulate user typing before prompt submission
+        </label>
+        <small className="video-export-field-note">Typing is presentation-only and permanently labeled as simulated.</small>
         <label className="checkbox-label video-export-redaction">
           <input type="checkbox" checked={reveal} onChange={(event) => setReveal(event.target.checked)} disabled={exporting} />
           Export unredacted content

@@ -27,4 +27,4 @@ Presentation HTML receives a presentation-redacted Stage Document. User and sour
 
 ## MP4 Replay Video Export
 
-Replay video is a silent, derived H.264 MP4 generated locally from projected Replay frames. The export records its selected local rendering engine, quality, speed, frame rate, streaming mode, Style Pack, and redaction in the rendering itself; simulated cadence is visibly labeled. Temporary raster frames are deleted after encoding. MP4 is not Source Evidence, does not claim Terminal Fidelity, and is not re-importable.
+Replay video is a silent, derived H.264 MP4 generated locally from projected Replay frames. The export records its selected local rendering engine, quality, speed, frame rate, streaming mode, simulated-prompt setting, Style Pack, and redaction in the rendering itself; simulated cadence is visibly labeled. Temporary raster frames are deleted after encoding. MP4 is not Source Evidence, does not claim Terminal Fidelity, and is not re-importable.

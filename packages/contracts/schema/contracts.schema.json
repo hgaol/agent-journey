@@ -625,6 +625,7 @@
         "speed": { "type": "number", "enum": [0.5, 1, 2, 4, 8, 16] },
         "fps": { "type": "integer", "enum": [30, 60] },
         "streamMode": { "type": "string", "enum": ["events", "recorded", "simulated"] },
+        "promptTyping": { "type": "boolean" },
         "reveal": { "type": "boolean" },
         "revisionId": { "type": "string" },
         "interpretationId": { "type": "string" }
@@ -714,6 +715,15 @@
             "playheadActivityId": { "type": "string" },
             "playheadDeliveryChunk": { "type": "integer", "minimum": 0 },
             "playheadSimulatedTextLength": { "type": "integer", "minimum": 0 },
+            "simulatedInputDraft": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["activityId", "text"],
+              "properties": {
+                "activityId": { "type": "string" },
+                "text": { "type": "string" }
+              }
+            },
             "streamMode": { "type": "string", "enum": ["events", "recorded", "simulated"] },
             "searchQuery": { "type": "string" },
             "selectedActivityId": { "type": "string" }

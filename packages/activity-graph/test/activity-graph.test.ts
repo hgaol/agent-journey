@@ -100,6 +100,32 @@ describe("Activity Graph", () => {
     expect(normal / fast).toBeGreaterThanOrEqual(4);
   });
 
+  it("creates simulated prompt drafts followed by an explicit submitted frame", () => {
+    const frames = deriveReplayFrames(
+      [
+        activity("prompt", "human-input", 1, { text: "Hi", timestamp: "2026-01-01T00:00:00.000Z" }),
+        activity("answer", "agent-output", 2, { text: "Hello", timestamp: "2026-01-01T00:00:01.000Z" })
+      ],
+      { streamMode: "events", simulateHumanInput: true, simulatedInputChunkSize: 1 }
+    );
+    expect(frames.slice(0, 4).map(({ simulatedInputTextLength, inputSubmitted }) => ({
+      simulatedInputTextLength,
+      inputSubmitted
+    }))).toEqual([
+      { simulatedInputTextLength: 0, inputSubmitted: undefined },
+      { simulatedInputTextLength: 1, inputSubmitted: undefined },
+      { simulatedInputTextLength: 2, inputSubmitted: undefined },
+      { simulatedInputTextLength: undefined, inputSubmitted: true }
+    ]);
+    expect(frames.slice(0, 4).every(({ timing }) => timing === "simulated")).toBe(true);
+    expect(canAutoPlayReplay(frames, "events")).toBe(true);
+    const promptOnly = deriveReplayFrames(
+      [activity("only-prompt", "human-input", 1, { text: "Hi", timestamp: "2026-01-01T00:00:00.000Z" })],
+      { streamMode: "events", simulateHumanInput: true }
+    );
+    expect(canAutoPlayReplay(promptOnly, "events")).toBe(true);
+  });
+
   it("uses a fast sixteen-character default for simulated streaming", () => {
     const frames = deriveReplayFrames(
       [activity("stream", "agent-output", 1, { text: "x".repeat(64) })],

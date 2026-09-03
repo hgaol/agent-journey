@@ -165,6 +165,10 @@ export interface StageDocument {
     playheadActivityId?: string;
     playheadDeliveryChunk?: number;
     playheadSimulatedTextLength?: number;
+    simulatedInputDraft?: {
+      activityId: string;
+      text: string;
+    };
     streamMode?: "events" | "recorded" | "simulated";
     searchQuery?: string;
     selectedActivityId?: string;
@@ -302,6 +306,7 @@ export interface ReplayVideoExportOptionsDocument {
   speed: 0.5 | 1 | 2 | 4 | 8 | 16;
   fps: 30 | 60;
   streamMode: "events" | "recorded" | "simulated";
+  promptTyping?: boolean;
   reveal: boolean;
   revisionId?: string;
   interpretationId?: string;
