@@ -16,7 +16,7 @@ import {
 
 const manifest = {
   id: "builtin.codex-cli",
-  version: "0.1.2",
+  version: "0.1.3",
   interfaceVersion: "1.0.0",
   displayName: "OpenAI Codex CLI",
   sourceAgent: "codex-cli",
@@ -185,23 +185,26 @@ function parseCodexFile(
 
     if (recordType === "event_msg") {
       if (payloadType === "agent_message_delta" || payloadType === "reasoning_content_delta") {
-        const kind = payloadType === "agent_message_delta" ? "agent-output" as const : "reasoning" as const;
-        const key = `${threadId}:${kind}`;
-        let activityId = deliveryActivities.get(key);
-        if (!activityId) {
-          activityId = builder.addActivity({
-            kind,
-            anchor: `${line.anchor}/stream`,
-            sourceOrder: sourceBase,
-            threadId,
-            timestamp,
-            actor: "agent",
-            text: ""
-          });
-          deliveryActivities.set(key, activityId);
+        const delta = textFrom(payload.delta ?? payload.message ?? payload.text);
+        if (delta) {
+          const kind = payloadType === "agent_message_delta" ? "agent-output" as const : "reasoning" as const;
+          const key = `${threadId}:${kind}`;
+          let activityId = deliveryActivities.get(key);
+          if (!activityId) {
+            activityId = builder.addActivity({
+              kind,
+              anchor: `${line.anchor}/stream`,
+              sourceOrder: sourceBase,
+              threadId,
+              timestamp,
+              actor: "agent",
+              text: ""
+            });
+            deliveryActivities.set(key, activityId);
+          }
+          builder.appendDeliveryChunk(activityId, delta, timestamp);
+          activityIds.push(activityId);
         }
-        builder.appendDeliveryChunk(activityId, textFrom(payload.delta ?? payload.message ?? payload.text), timestamp);
-        activityIds.push(activityId);
       } else if (payloadType === "user_message") {
         const text = itemText(payload);
         if (text) {
@@ -326,10 +329,10 @@ function parseCodexFile(
         const text = itemText(payload);
         const streamedId = deliveryActivities.get(`${threadId}:reasoning`);
         if (streamedId) {
-          builder.setActivityText(streamedId, text);
+          if (text.trim()) builder.setActivityText(streamedId, text);
           activityIds.push(streamedId);
           deliveryActivities.delete(`${threadId}:reasoning`);
-        } else activityIds.push(
+        } else if (text.trim()) activityIds.push(
           builder.addActivity({
             kind: "reasoning",
             anchor: line.anchor,

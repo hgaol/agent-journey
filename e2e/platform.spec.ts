@@ -245,6 +245,16 @@ test("GitHub Copilot CLI renderer follows its native colorful TUI hierarchy", as
   await expectNativeChromeDocked(page, stage);
 });
 
+test("Copilot styling does not expose selectable empty reasoning rows", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Inspect greeting module", { exact: true }).click();
+  await page.getByLabel("Renderer").selectOption("builtin.github-copilot-cli");
+  const stage = page.frameLocator("iframe.journey-stage");
+  await expect(stage.locator('.activity[data-kind="reasoning"]:not(:has(.collapsed-activity))')).toHaveCount(0);
+  await expect(stage.locator('.activity[data-native-name="mode"]')).toBeHidden();
+  await expect(stage.locator('.activity[data-native-name="permission-mode"]')).toBeHidden();
+});
+
 test("replays Claude Code sessions with untimed control records placed by source order", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Inspect greeting module", { exact: true }).click();

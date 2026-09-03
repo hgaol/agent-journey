@@ -15,7 +15,7 @@ import {
 
 const manifest = {
   id: "builtin.claude-code",
-  version: "0.1.2",
+  version: "0.1.3",
   interfaceVersion: "1.0.0",
   displayName: "Claude Code",
   sourceAgent: "claude-code",
@@ -142,6 +142,8 @@ function parseFile(
         const sourceOrder = sourceBase + blockIndex;
 
         if (blockType === "thinking") {
+          const reasoning = textFrom(block.thinking ?? block.text);
+          if (!reasoning.trim()) return;
           recordActivityIds.push(
             builder.addActivity({
               kind: "reasoning",
@@ -150,7 +152,7 @@ function parseFile(
               threadId,
               timestamp,
               actor: "agent",
-              text: textFrom(block.thinking ?? block.text),
+              text: reasoning,
               payload: jsonValue(block)
             })
           );

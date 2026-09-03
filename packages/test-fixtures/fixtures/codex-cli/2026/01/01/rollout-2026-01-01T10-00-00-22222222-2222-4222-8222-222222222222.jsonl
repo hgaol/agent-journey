@@ -4,6 +4,7 @@
 {"timestamp":"2026-01-01T10:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"Run the greeting tests."}}
 {"timestamp":"2026-01-01T10:00:03.000Z","type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"Follow repository instructions."}]}}
 {"timestamp":"2026-01-01T10:00:04.000Z","type":"response_item","payload":{"type":"reasoning","id":"reason-1","summary":[{"type":"summary_text","text":"I should run the focused test."}]}}
+{"timestamp":"2026-01-01T10:00:04.100Z","type":"response_item","payload":{"type":"reasoning","id":"reason-empty","summary":[]}}
 {"timestamp":"2026-01-01T10:00:05.000Z","type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"cmd\":\"pnpm test greeting\"}","call_id":"call-x-1"}}
 {"timestamp":"2026-01-01T10:00:06.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call-x-1","output":"1 test passed"}}
 {"timestamp":"2026-01-01T10:00:07.000Z","type":"event_msg","payload":{"type":"agent_message","message":"The greeting test passes."}}

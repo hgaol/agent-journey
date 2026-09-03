@@ -14,7 +14,7 @@ import {
 
 const manifest = {
   id: "builtin.pi",
-  version: "0.2.1",
+  version: "0.2.2",
   interfaceVersion: "1.0.0",
   displayName: "Pi",
   sourceAgent: "pi",
@@ -184,6 +184,8 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
           const sourceOrder = sourceBase + blockIndex;
 
           if (blockType === "thinking") {
+            const reasoning = textFrom(block.thinking ?? block.text);
+            if (!reasoning.trim()) return;
             activityIds.push(
               builder.addActivity({
                 kind: "reasoning",
@@ -191,7 +193,7 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
                 sourceOrder,
                 timestamp,
                 actor: "agent",
-                text: textFrom(block.thinking ?? block.text),
+                text: reasoning,
                 payload: jsonValue(block),
                 ...(parentLinks ? { links: parentLinks } : {})
               })

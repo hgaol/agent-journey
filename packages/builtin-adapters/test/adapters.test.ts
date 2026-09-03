@@ -89,6 +89,10 @@ describe.each(cases)("$label adapter", ({ sourceAgent, adapter, nativeSessionId,
     expect(interpretation.coverage.sourceRecordCount).toBe(interpretation.coverage.dispositions.length);
     expect(interpretation.coverage.dispositions.every(({ disposition }) => Boolean(disposition))).toBe(true);
     expect(interpretation.activities.every(({ evidenceAnchor }) => evidenceAnchor.length > 0)).toBe(true);
+    expect(interpretation.activities
+      .filter(({ kind }) => kind === "reasoning")
+      .every(({ text }) => Boolean(text?.trim()))
+    ).toBe(true);
 
     const kinds = new Set(interpretation.activities.map(({ kind }) => kind));
     for (const kind of expectedKinds) expect(kinds.has(kind as never), `missing ${kind}`).toBe(true);

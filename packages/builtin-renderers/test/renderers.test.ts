@@ -16,7 +16,7 @@ describe("built-in Renderer Plugins", () => {
   it.each([
     ["claude-code", "0.4.0", "--stage-human:#3a3a3a", "--stage-accent:#d78787"],
     ["codex-cli", "0.2.0", "--stage-human:#292c33", "--stage-accent:#00cdcd"],
-    ["github-copilot-cli", "0.4.0", "--stage-human:#0c0c0c", "--stage-accent:#61d6d6"],
+    ["github-copilot-cli", "0.4.1", "--stage-human:#0c0c0c", "--stage-accent:#61d6d6"],
     ["pi", "0.4.0", "--stage-human:#343541", "--stage-accent:#8abeb7"]
   ])("uses captured native colors and hierarchy for %s", (sourceAgent, version, panel, accent) => {
     const renderer = rendererForSourceAgent(sourceAgent);
@@ -34,6 +34,7 @@ describe("built-in Renderer Plugins", () => {
     expect(renderer.css).toContain(".tool-native-summary{display:flex");
     expect(renderer.css).toContain('content:"Shell"');
     expect(renderer.css).toContain(".stage-native-workspace{display:block");
+    expect(renderer.css).toContain(':not(:has(.collapsed-activity)){display:none}');
   });
 
   it("matches the installed Claude Code mascot, prompt, and editor treatments", () => {
