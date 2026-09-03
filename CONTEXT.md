@@ -245,11 +245,11 @@ A clearly labeled presentation in which final Human Input text is revealed as a 
 _Avoid_: Recorded input, Agent Control, evidenced typing cadence
 
 **Typing Speed**:
-A user-selected 0.5×–4× multiplier applied only to Simulated Prompt Typing. It remains independent from response Streaming Speed and inter-Activity Timeline Speed.
+A user-selected 0.5×–4× multiplier applied only to Simulated Prompt Typing. It remains independent from response Streaming Speed and inter-Activity Timeline Speed, and targets the same character cadence regardless of Journey size.
 _Avoid_: Recorded keystroke rate, Streaming Speed
 
 **Streaming Speed**:
-A user-selected multiplier applied only to response chunk transitions within Recorded or Simulated Streaming. It does not alter prompt typing or timestamp-based intervals between separate Activities.
+A user-selected multiplier applied only to response chunk transitions within Recorded or Simulated Streaming. It does not alter prompt typing or timestamp-based intervals between separate Activities, and targets the same response cadence regardless of Journey size.
 _Avoid_: Typing Speed, Timeline speed, source timing
 
 **Reasoning**:

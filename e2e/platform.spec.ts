@@ -290,8 +290,12 @@ test("simulates prompt typing in the Copilot composer before submission", async 
   const draft = stage.locator(".stage-native-composer-draft");
   await expect(draft).toHaveText(/.+/u, { timeout: 5_000 });
   await expect(stage.locator(".stage-native-composer")).toHaveCSS("background-color", "rgb(12, 12, 12)");
+  const initialDraftLength = (await draft.textContent())!.length;
+  await stage.locator(".stage").evaluate((element) => { element.dataset.typingStage = "stable"; });
+  await expect.poll(async () => (await draft.textContent())!.length).toBeGreaterThan(initialDraftLength + 2);
   const play = page.locator(".terminal-play");
   await play.click();
+  await expect(stage.locator(".stage")).toHaveAttribute("data-typing-stage", "stable");
   await expect(stage.locator('.activity[data-kind="human-input"]')).toHaveCount(0);
   await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED prompt typing 0.5×");
   await play.click();
@@ -330,6 +334,23 @@ test("offers clearly labeled simulated TUI streaming when recorded chunks are un
     timeout: 5000
   });
   await expect(page.locator(".terminal-transport > small")).toContainText("stream 8×");
+});
+
+test("streams long responses without rebuilding the complete Stage", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Inspect greeting module", { exact: true }).click();
+  await page.getByLabel("Prompt playback").selectOption("instant");
+  await page.getByLabel("Content streaming").selectOption("simulated");
+  await page.getByLabel("Streaming speed").selectOption("0.5");
+  await page.getByLabel("Replay speed").selectOption("4");
+  const stage = page.frameLocator("iframe.journey-stage");
+  const streamedText = stage.locator('.activity[data-kind="agent-output"] .activity-text').last();
+  await expect(streamedText).toContainText("The formal-style", { timeout: 10_000 });
+  const initialLength = (await streamedText.textContent())!.length;
+  await stage.locator(".stage").evaluate((element) => { element.dataset.streamingStage = "stable"; });
+  await expect.poll(async () => (await streamedText.textContent())!.length).toBeGreaterThan(initialLength);
+  await page.locator(".terminal-play").click();
+  await expect(stage.locator(".stage")).toHaveAttribute("data-streaming-stage", "stable");
 });
 
 test("exports a configurable source-native Replay as MP4", async ({ page }) => {

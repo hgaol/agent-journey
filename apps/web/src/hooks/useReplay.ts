@@ -28,6 +28,9 @@ export function useReplay(
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
   const replayVariant = `${streamMode}:${simulateHumanInput ? "typed-prompts" : "instant-prompts"}`;
   const previousReplayVariant = useRef(replayVariant);
+  const framePresentedAtRef = useRef<number | undefined>(undefined);
+  const expectedIndexRef = useRef<number | undefined>(undefined);
+  const scheduleKeyRef = useRef("");
 
   useEffect(() => {
     if (previousReplayVariant.current === replayVariant) return;
@@ -60,23 +63,52 @@ export function useReplay(
 
   useEffect(() => {
     if (!playing || !canAutoPlay || index >= frames.length - 1) {
+      framePresentedAtRef.current = undefined;
+      expectedIndexRef.current = undefined;
+      scheduleKeyRef.current = "";
       if (index >= frames.length - 1) setPlaying(false);
       return;
     }
-    const current = frames[index];
-    const next = frames[index + 1];
-    const replayGap = replayFrameDelay(current!, next!, {
-      timelineSpeed: speed,
+    const delayOptions = { timelineSpeed: speed, streamingSpeed, typingSpeed };
+    const scheduleKey = [
+      replayVariant,
+      speed,
       streamingSpeed,
-      typingSpeed
-    });
+      typingSpeed,
+      frames.length,
+      frames[0]?.activityId ?? "",
+      frames.at(-1)?.activityId ?? ""
+    ].join(":");
+    const now = window.performance.now();
+    if (
+      framePresentedAtRef.current === undefined
+      || expectedIndexRef.current !== index
+      || scheduleKeyRef.current !== scheduleKey
+    ) {
+      framePresentedAtRef.current = now;
+      expectedIndexRef.current = index;
+      scheduleKeyRef.current = scheduleKey;
+    }
+    const replayGap = replayFrameDelay(frames[index]!, frames[index + 1]!, delayOptions);
     const gap = holdingFirstFrame && index === 0 ? Math.max(400, replayGap) : replayGap;
+    const targetTime = framePresentedAtRef.current + gap;
     const timer = window.setTimeout(() => {
+      const firedAt = window.performance.now();
+      let nextIndex = index + 1;
+      let presentedAt = targetTime;
+      while (nextIndex < frames.length - 1) {
+        const catchUpGap = replayFrameDelay(frames[nextIndex]!, frames[nextIndex + 1]!, delayOptions);
+        if (presentedAt + catchUpGap > firedAt) break;
+        presentedAt += catchUpGap;
+        nextIndex += 1;
+      }
+      framePresentedAtRef.current = presentedAt;
+      expectedIndexRef.current = nextIndex;
       setHoldingFirstFrame(false);
-      setIndex((value) => value + 1);
-    }, gap);
+      setIndex(nextIndex);
+    }, Math.max(0, targetTime - now));
     return () => window.clearTimeout(timer);
-  }, [canAutoPlay, frames, holdingFirstFrame, index, playing, speed, streamingSpeed, typingSpeed]);
+  }, [canAutoPlay, frames, holdingFirstFrame, index, playing, replayVariant, speed, streamingSpeed, typingSpeed]);
 
   return {
     frames,
