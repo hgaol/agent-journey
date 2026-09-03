@@ -65,7 +65,7 @@ export function JourneyPage(): React.ReactNode {
   const [rendererId, setRendererId] = useState<string>();
   const [view, setView] = useState<"review" | "replay">("review");
   const [streamMode, setStreamMode] = useState<ReplayStreamMode>("events");
-  const [simulatePromptTyping, setSimulatePromptTyping] = useState(false);
+  const [simulatePromptTyping, setSimulatePromptTyping] = useState(true);
   const [stageSearch, setStageSearch] = useState("");
   const [selectedActivityId, setSelectedActivityId] = useState<string>();
   const [evidenceSelection, setEvidenceSelection] = useState<{

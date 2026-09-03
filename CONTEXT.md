@@ -237,7 +237,7 @@ An explicitly labeled, optional TUI-like character reveal used when no Delivery 
 _Avoid_: Recorded Streaming, faithful cadence
 
 **Simulated Prompt Typing**:
-An explicitly selected presentation in which final Human Input text is revealed as a draft in the source-native composer, then moved into the transcript as submitted. It does not claim captured keystrokes and never sends the prompt to a Source Agent.
+A clearly labeled presentation in which final Human Input text is revealed as a draft in the source-native composer, then moved into the transcript as submitted. It does not claim captured keystrokes and never sends the prompt to a Source Agent.
 _Avoid_: Recorded input, Agent Control, evidenced typing cadence
 
 **Streaming Speed**:

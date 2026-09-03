@@ -268,14 +268,18 @@ test("starts progressive Replay on the first switch from Review", async ({ page 
   await expect(page.locator(".terminal-play")).toHaveText("Ⅱ");
 });
 
-test("simulates prompt typing in the native composer before submission", async ({ page }) => {
+test("simulates prompt typing in the Copilot composer before submission", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Read the greeting file.", { exact: true }).click();
+  await page.getByLabel("Renderer").selectOption("builtin.github-copilot-cli");
   const stage = page.frameLocator("iframe.journey-stage");
-  await page.getByLabel("Prompt playback").selectOption("simulated");
+  const promptPlayback = page.getByLabel("Prompt playback");
+  await promptPlayback.selectOption("instant");
+  await promptPlayback.selectOption("simulated");
   await expect(page.locator(".terminal-pane-header")).toContainText("simulated prompt typing");
   const draft = stage.locator(".stage-native-composer-draft");
   await expect(draft).toHaveText(/.+/u, { timeout: 5_000 });
+  await expect(stage.locator(".stage-native-composer")).toHaveCSS("background-color", "rgb(12, 12, 12)");
   const play = page.locator(".terminal-play");
   await play.click();
   await expect(stage.locator('.activity[data-kind="human-input"]')).toHaveCount(0);

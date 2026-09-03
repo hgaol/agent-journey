@@ -62,12 +62,15 @@ const options = validateReplayVideoOptions({
   speed: 1,
   fps: 30,
   streamMode: "events",
+  promptTyping: false,
   reveal: false
 });
 
 describe("Replay video export", () => {
   it("validates bounded quality, speed, frame-rate, and streaming options", () => {
-    expect(options).toMatchObject({ browser: "auto", quality: "720p", speed: 1, fps: 30, streamMode: "events" });
+    expect(options).toMatchObject({ browser: "auto", quality: "720p", speed: 1, fps: 30, streamMode: "events", promptTyping: false });
+    const { promptTyping: _promptTyping, ...withoutPromptTyping } = options;
+    expect(validateReplayVideoOptions(withoutPromptTyping).promptTyping).toBe(true);
     expect(() => validateReplayVideoOptions({ ...options, speed: 3 })).toThrow(/speed/u);
     expect(() => validateReplayVideoOptions({ ...options, quality: "4k" })).toThrow(/quality/u);
     expect(() => validateReplayVideoOptions({ ...options, promptTyping: "yes" })).toThrow(/Prompt typing/u);

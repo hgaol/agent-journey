@@ -26,7 +26,7 @@ export function VideoExportDialog(props: {
   const [streamMode, setStreamMode] = useState<ReplayVideoExportOptionsDocument["streamMode"]>(
     props.initialStreamMode
   );
-  const [promptTyping, setPromptTyping] = useState(false);
+  const [promptTyping, setPromptTyping] = useState(true);
   const [rendererId, setRendererId] = useState(props.rendererId);
   const [reveal, setReveal] = useState(props.reveal);
   const [exporting, setExporting] = useState(false);

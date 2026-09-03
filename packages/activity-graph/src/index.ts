@@ -334,15 +334,21 @@ export function replayFrameDelay(
 ): number {
   const withinContentStream = current.activityId === next.activityId
     && (next.streamSource === "recorded" || next.streamSource === "simulated");
+  const withinPromptTyping = withinContentStream
+    && (next.simulatedInputTextLength !== undefined || next.inputSubmitted === true);
   const selectedSpeed = withinContentStream
     ? options.streamingSpeed
     : options.timelineSpeed;
   const speed = Number.isFinite(selectedSpeed) && selectedSpeed > 0 ? selectedSpeed : 1;
-  const minimumDelay = withinContentStream
-    ? 4
-    : next.timing === "source-order"
-      ? 12
-      : 16;
+  const minimumDelay = next.inputSubmitted
+    ? 180
+    : withinPromptTyping
+      ? 30
+      : withinContentStream
+        ? 4
+        : next.timing === "source-order"
+          ? 12
+          : 16;
   return Math.max(
     minimumDelay,
     Math.min(options.maximumDelayMs ?? 5_000, (next.displayOffsetMs - current.displayOffsetMs) / speed)

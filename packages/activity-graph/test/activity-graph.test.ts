@@ -124,6 +124,14 @@ describe("Activity Graph", () => {
       { streamMode: "events", simulateHumanInput: true }
     );
     expect(canAutoPlayReplay(promptOnly, "events")).toBe(true);
+    expect(replayFrameDelay(promptOnly[0]!, promptOnly[1]!, {
+      timelineSpeed: 16,
+      streamingSpeed: 16
+    })).toBeGreaterThanOrEqual(30);
+    expect(replayFrameDelay(promptOnly[2]!, promptOnly[3]!, {
+      timelineSpeed: 16,
+      streamingSpeed: 16
+    })).toBeGreaterThanOrEqual(180);
   });
 
   it("uses a fast sixteen-character default for simulated streaming", () => {

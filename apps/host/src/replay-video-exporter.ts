@@ -100,7 +100,7 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
     speed: speed as ReplayVideoExportOptionsDocument["speed"],
     fps,
     streamMode: streamMode as ReplayVideoExportOptionsDocument["streamMode"],
-    promptTyping: input.promptTyping === true,
+    promptTyping: input.promptTyping !== false,
     reveal: input.reveal,
     ...(typeof input.revisionId === "string" ? { revisionId: input.revisionId } : {}),
     ...(typeof input.interpretationId === "string" ? { interpretationId: input.interpretationId } : {})

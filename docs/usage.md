@@ -62,7 +62,7 @@ The **Content streaming** selector offers:
 - **Recorded stream** — available only when the Fidelity Manifest reports Delivery Traces; preserved chunks appear in recorded order and timing.
 - **Simulated TUI stream** — opt-in fast sixteen-character streaming for agent output and reasoning when native chunks were not persisted. The dock displays `SIMULATED cadence`; this is presentation only and does not become Source Evidence.
 
-The **Prompt playback** selector can explicitly enable **simulated typing**: Human Input appears as a draft in the source-native composer, then moves into the transcript before the response. This is labeled simulation, uses the cadence speed, represents no recorded keystrokes, and sends nothing to the source agent.
+The **Prompt playback** selector defaults to **simulated typing** and can be changed to instant submission: Human Input appears as a draft in the source-native composer, then moves into the transcript before the response. This is labeled simulation, uses the cadence speed, represents no recorded keystrokes, and sends nothing to the source agent.
 
 Recorded and simulated modes—and simulated prompt typing—expose a separate **Streaming speed** selector from 0.5× through 16×. It changes only chunk transitions within the current response; the **Timeline speed** selector independently controls timestamp gaps between Activities.
 
