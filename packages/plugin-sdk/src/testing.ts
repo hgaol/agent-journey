@@ -83,6 +83,9 @@ export async function runSourceAdapterConformance(
   let activities = 0;
   for (const candidate of firstDiscovery) {
     if (candidate.sourceAgent !== adapter.manifest.sourceAgent) throw new Error("candidate Source Agent mismatch");
+    if (candidate.turnCountEstimate !== undefined && (
+      !Number.isInteger(candidate.turnCountEstimate) || candidate.turnCountEstimate < 0
+    )) throw new Error("candidate Turn Count Estimate is invalid");
     candidate.relativePaths.forEach(assertPortableRelativePath);
     const interpretation = await adapter.interpret(candidate, source);
     assertInterpretationDocument(interpretation);

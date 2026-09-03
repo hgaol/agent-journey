@@ -606,7 +606,9 @@
         "workspace": { "type": "string" },
         "sourceAgentVersion": { "type": "string" },
         "startedAt": { "type": "string", "format": "date-time" },
+        "lastModifiedAt": { "type": "string", "format": "date-time" },
         "byteSize": { "type": "integer", "minimum": 0 },
+        "turnCountEstimate": { "type": "integer", "minimum": 0 },
         "locator": { "type": "object", "additionalProperties": true }
       }
     },

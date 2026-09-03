@@ -34,7 +34,7 @@ The Archive interface owns Journey identity, immutable source revisions, version
 
 ### Source Adapter seam
 
-Four bundled adapters and sandboxed third-party adapters satisfy the same interface: Discovery over a constrained `VirtualSource`, then Interpretation over a selected `SourceBundleView`. The host—not the adapter—copies bytes into the Independent Archive. Every interpreted source record receives an Evidence Disposition.
+Four bundled adapters and sandboxed third-party adapters satisfy the same interface: Discovery over a constrained `VirtualSource`, then Interpretation over a selected `SourceBundleView`. Discovery may report an optional source-native Turn Count Estimate; the host enriches candidates with byte size and newest file modification time from `VirtualSource` metadata without interpreting or archiving them. The host—not the adapter—copies bytes into the Independent Archive. Every interpreted source record receives an Evidence Disposition.
 
 Third-party JavaScript executes in QuickJS with bounded memory/time and no Node or browser capabilities. It receives only files inside an approved Source Root or explicit manual import.
 

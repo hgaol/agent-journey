@@ -59,7 +59,7 @@ Renderer code runs in capability-free QuickJS and returns a validated declarativ
 
 ## Source adapters
 
-Source Adapter Plugins discover and interpret source histories through a separately permissioned interface. They are authored in TypeScript, distributed as dependency-bundled JavaScript, and run in a restricted non-Node sandbox with virtual read-only access to granted roots. The host module—not the adapter—creates Source Bundles and commits Capture Cycles.
+Source Adapter Plugins discover and interpret source histories through a separately permissioned interface. Discovery candidates expose lightweight scope metadata—session date, host-computed source size, and an optional source-native Turn Count Estimate—without requiring Interpretation or Capture. They are authored in TypeScript, distributed as dependency-bundled JavaScript, and run in a restricted non-Node sandbox with virtual read-only access to granted roots. The host module—not the adapter—creates Source Bundles and commits Capture Cycles.
 
 ## Storage and search
 

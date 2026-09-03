@@ -1,4 +1,5 @@
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
+import { fixturePath } from "@agentjourney/test-fixtures";
 
 async function expectNativeChromeDocked(page: Page, stage: FrameLocator): Promise<void> {
   const frameBox = await page.locator("iframe.journey-stage").boundingBox();
@@ -203,6 +204,21 @@ test("terminal transcript fills the available center pane", async ({ page }) => 
   expect(stage).not.toBeNull();
   expect(stage!.height).toBeGreaterThan(pane!.height * 0.75);
   expect(Math.abs((stage!.y + stage!.height) - (pane!.y + pane!.height))).toBeLessThan(2);
+});
+
+test("shows date, size, and turn estimates in source scan previews", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Sources" }).click();
+  const piSource = page.locator(".source-card").filter({
+    has: page.getByRole("heading", { name: "Pi", exact: true })
+  });
+  page.once("dialog", (dialog) => dialog.accept(fixturePath("pi")));
+  await piSource.getByRole("button", { name: "Choose root" }).click();
+  await piSource.getByRole("button", { name: "Preview scan" }).click();
+  const candidate = piSource.locator(".discovery-candidate");
+  await expect(candidate.locator("time")).toHaveAttribute("datetime", "2026-01-01T10:00:00.000Z");
+  await expect(candidate.locator(".discovery-candidate-size")).toContainText(/\d+(?:\.\d+)? (?:KB|B)/u);
+  await expect(candidate.locator(".discovery-candidate-turns")).toHaveText("~2 turns");
 });
 
 test("shows source consent and archive operations", async ({ page }) => {

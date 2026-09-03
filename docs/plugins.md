@@ -46,6 +46,8 @@ globalThis.agentJourneyAdapter = {
         sourceAgent: "example-agent",
         nativeSessionId: "native-id",
         relativePaths: files.map((file) => file.path),
+        startedAt: "2026-01-01T10:00:00.000Z",
+        turnCountEstimate: 3,
         locator: { mainPath: files[0].path }
       }
     ];
@@ -80,7 +82,7 @@ globalThis.agentJourneyAdapter = {
 };
 ```
 
-Methods are synchronous and return JSON-compatible documents. Every interpreted source record needs an Evidence Disposition.
+Methods are synchronous and return JSON-compatible documents. Discovery may return `startedAt` and a non-negative integer `turnCountEstimate`; the latter is an estimate from source-native human prompts, not a Canonical Turn count. The host adds `byteSize` and `lastModifiedAt` from approved `VirtualSource` metadata. Every interpreted source record needs an Evidence Disposition.
 
 ## Create, package, and check
 

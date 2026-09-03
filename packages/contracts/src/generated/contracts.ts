@@ -277,7 +277,9 @@ export interface DiscoveredJourneyDocument {
   workspace?: string;
   sourceAgentVersion?: string;
   startedAt?: string;
+  lastModifiedAt?: string;
   byteSize?: number;
+  turnCountEstimate?: number;
   locator: {
     [k: string]: unknown;
   };

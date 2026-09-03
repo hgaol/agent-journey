@@ -14,7 +14,7 @@ import {
 
 const manifest = {
   id: "builtin.pi",
-  version: "0.2.0",
+  version: "0.2.1",
   interfaceVersion: "1.0.0",
   displayName: "Pi",
   sourceAgent: "pi",
@@ -48,6 +48,9 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
       sourceAgentVersion ??= asString(record.agentVersion) ?? asString(record.piVersion);
     }
 
+    const turnCountEstimate = lines.filter(({ value: record }) =>
+      record?.type === "message" && asRecord(record.message)?.role === "user"
+    ).length;
     const workspace = asString(header?.cwd);
     const startedAt = normalizeTimestamp(header?.timestamp);
     candidates.push({
@@ -58,6 +61,7 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
       ...(workspace ? { workspace } : {}),
       ...(sourceAgentVersion ? { sourceAgentVersion } : {}),
       ...(startedAt ? { startedAt } : {}),
+      turnCountEstimate,
       locator: { mainPath: relativePath }
     });
   }

@@ -129,7 +129,39 @@ export function SourcesPage(): React.ReactNode {
                 <div className="discovery-panel">
                   <div><strong>{found.length}</strong> candidate {found.length === 1 ? "Journey" : "Journeys"}<span>{found.reduce((count, item) => count + item.relativePaths.length, 0)} source files · {formatBytes(found.reduce((total, item) => total + (item.byteSize ?? 0), 0))} · {dateRange(found)}</span></div>
                   <div className="capture-scope-actions"><button onClick={() => setSelectedBySource((current) => ({ ...current, [source.sourceAgent]: found.map(({ nativeSessionId }) => nativeSessionId) }))}>Select all</button><button onClick={() => setSelectedBySource((current) => ({ ...current, [source.sourceAgent]: [] }))}>Clear</button></div>
-                  <ul>{found.map((item) => <li key={item.nativeSessionId}><label><input type="checkbox" checked={selected.includes(item.nativeSessionId)} onChange={() => toggleSelection(item.nativeSessionId)} /><span>{item.title ?? "Untitled"}</span></label><code>{item.nativeSessionId.slice(0, 12)}</code></li>)}</ul>
+                  <ul>{found.map((item) => {
+                    const sessionDate = item.startedAt ?? item.lastModifiedAt;
+                    return (
+                      <li className="discovery-candidate" key={item.nativeSessionId}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(item.nativeSessionId)}
+                            onChange={() => toggleSelection(item.nativeSessionId)}
+                          />
+                          <span className="discovery-candidate-copy">
+                            <strong>{item.title ?? "Untitled"}</strong>
+                            {item.workspace && <small>{item.workspace}</small>}
+                          </span>
+                        </label>
+                        <span className="discovery-candidate-facts">
+                          {sessionDate ? (
+                            <time dateTime={sessionDate} title={item.startedAt ? "Session started" : "Source last modified"}>
+                              {formatSessionDate(sessionDate)}
+                            </time>
+                          ) : <span>date unknown</span>}
+                          <span className="discovery-candidate-size">{formatBytes(item.byteSize ?? 0)}</span>
+                          {item.turnCountEstimate !== undefined && (
+                            <span
+                              className="discovery-candidate-turns"
+                              title="Estimated from source-native human prompts"
+                            >~{item.turnCountEstimate} {item.turnCountEstimate === 1 ? "turn" : "turns"}</span>
+                          )}
+                          <code title={item.nativeSessionId}>{item.nativeSessionId.slice(0, 12)}</code>
+                        </span>
+                      </li>
+                    );
+                  })}</ul>
                   <button
                     className="primary-button"
                     disabled={capture.isPending || selected.length === 0}
@@ -151,8 +183,23 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function formatSessionDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return "date unknown";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(date);
+}
+
 function dateRange(items: DiscoveredJourneyDocument[]): string {
-  const dates = items.flatMap(({ startedAt }) => startedAt ? [new Date(startedAt)] : []).sort((left, right) => left.valueOf() - right.valueOf());
+  const dates = items
+    .flatMap(({ startedAt, lastModifiedAt }) => {
+      const value = startedAt ?? lastModifiedAt;
+      return value ? [new Date(value)] : [];
+    })
+    .filter((date) => !Number.isNaN(date.valueOf()))
+    .sort((left, right) => left.valueOf() - right.valueOf());
   if (!dates.length) return "dates unknown";
   const first = dates[0]!.toLocaleDateString();
   const last = dates.at(-1)!.toLocaleDateString();

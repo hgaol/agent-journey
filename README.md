@@ -35,7 +35,7 @@ By default data is stored under `~/.agentjourney`. Override it with `AGENTJOURNE
 
 1. Open **Sources**.
 2. Approve a detected Source Root.
-3. Preview candidate count, files, size, and date range.
+3. Preview each candidate's session date, source size, and estimated turns, plus aggregate files and date range.
 4. Select the exact Capture Scope.
 5. Capture it manually, or explicitly change that source to automatic scanning.
 

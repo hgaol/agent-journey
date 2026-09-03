@@ -10,6 +10,7 @@ All defined milestones are implemented and verified. Follow-up work should be dr
 - [x] Source Adapter interface and in-memory conformance harness
 - [x] sanitized fixtures and parsers for Claude Code, Codex CLI, Pi, and standalone Copilot CLI
 - [x] manual Discovery and Capture Cycle endpoints
+- [x] per-candidate Discovery date, byte size, and optional Turn Count Estimate
 - [x] authenticated loopback Fastify host
 - [x] React/Vite Platform Shell
 - [x] Journey library, detail view, renderer selector, and bundled source-native Style Packs

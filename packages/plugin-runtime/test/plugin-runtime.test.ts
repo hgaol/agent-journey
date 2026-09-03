@@ -158,6 +158,19 @@ describe("Source Adapter sandbox", () => {
     expect(interpretation.activities[0]?.text).toBe("hello from sandbox");
   });
 
+  it("rejects an invalid discovery Turn Count Estimate", async () => {
+    const { integrity: _integrity, ...base } = adapterPackage();
+    const adapter = new SandboxedSourceAdapter(withPluginIntegrity({
+      ...base,
+      javascript: adapterJavascript.replace(
+        "locator: { mainPath: file.path }",
+        "turnCountEstimate: -1, locator: { mainPath: file.path }"
+      )
+    }));
+    const source = new MemorySource({ "sessions/example.jsonl": "hello from sandbox" });
+    await expect(adapter.discover(source)).rejects.toThrow(/Turn Count Estimate/u);
+  });
+
   it("interrupts runaway adapter code", async () => {
     await expect(
       evaluateAdapterMethod(`globalThis.agentJourneyAdapter={discover(){while(true){} }}`, "discover", {}, { timeoutMs: 20 })

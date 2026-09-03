@@ -15,7 +15,7 @@ import {
 
 const manifest = {
   id: "builtin.claude-code",
-  version: "0.1.0",
+  version: "0.1.1",
   interfaceVersion: "1.0.0",
   displayName: "Claude Code",
   sourceAgent: "claude-code",
@@ -53,6 +53,14 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
       }
     }
 
+    const turnCountEstimate = lines.filter(({ value: record }) => {
+      if (record?.type !== "user" || record.isMeta === true) return false;
+      const content = asRecord(record.message)?.content;
+      return Array.isArray(content)
+        ? content.some((block) => asRecord(block)?.type !== "tool_result")
+        : content !== undefined;
+    }).length;
+
     const sessionFolder = `${mainPath.slice(0, -".jsonl".length)}/`;
     const relativePaths = entries
       .map(({ path: filePath }) => filePath.replaceAll("\\", "/"))
@@ -67,6 +75,7 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
       ...(workspace ? { workspace } : {}),
       ...(sourceAgentVersion ? { sourceAgentVersion } : {}),
       ...(startedAt ? { startedAt } : {}),
+      turnCountEstimate,
       locator: { mainPath }
     });
   }

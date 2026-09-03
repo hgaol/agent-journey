@@ -70,6 +70,12 @@ describe("loopback host", () => {
     const discovery = await app.inject({ method: "GET", url: "/api/v1/sources/pi/discover", headers });
     expect(discovery.statusCode).toBe(200);
     expect(discovery.json()).toHaveLength(1);
+    expect(discovery.json()[0]).toMatchObject({
+      startedAt: "2026-01-01T10:00:00.000Z",
+      turnCountEstimate: 2
+    });
+    expect(discovery.json()[0].byteSize).toBeGreaterThan(0);
+    expect(new Date(discovery.json()[0].lastModifiedAt).toISOString()).toBe(discovery.json()[0].lastModifiedAt);
 
     const capture = await app.inject({
       method: "POST",

@@ -37,6 +37,9 @@ function assertCandidates(value: unknown, sourceAgent: string, availablePaths: S
     for (const filePath of item.relativePaths) {
       if (typeof filePath !== "string" || !availablePaths.has(filePath)) throw new Error(`Adapter requested unavailable source path: ${String(filePath)}`);
     }
+    if (item.turnCountEstimate !== undefined && (
+      typeof item.turnCountEstimate !== "number" || !Number.isInteger(item.turnCountEstimate) || item.turnCountEstimate < 0
+    )) throw new Error("Adapter candidate Turn Count Estimate is invalid");
     if (!item.locator || typeof item.locator !== "object" || Array.isArray(item.locator)) item.locator = {};
   }
 }

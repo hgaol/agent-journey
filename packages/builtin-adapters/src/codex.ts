@@ -16,7 +16,7 @@ import {
 
 const manifest = {
   id: "builtin.codex-cli",
-  version: "0.1.0",
+  version: "0.1.1",
   interfaceVersion: "1.0.0",
   displayName: "OpenAI Codex CLI",
   sourceAgent: "codex-cli",
@@ -35,6 +35,7 @@ interface CodexCandidateMeta {
   workspace?: string | undefined;
   version?: string | undefined;
   startedAt?: string | undefined;
+  turnCountEstimate: number;
 }
 
 async function readCandidateMeta(source: VirtualSource, relativePath: string): Promise<CodexCandidateMeta> {
@@ -51,9 +52,14 @@ async function readCandidateMeta(source: VirtualSource, relativePath: string): P
       break;
     }
   }
+  const turnCountEstimate = lines.filter(({ value: record }) => {
+    const item = asRecord(record?.payload);
+    return record?.type === "event_msg" && item?.type === "user_message";
+  }).length;
   return {
     path: relativePath,
     id,
+    turnCountEstimate,
     ...(asString(payload.parent_thread_id) ? { parentThreadId: asString(payload.parent_thread_id) } : {}),
     ...(asString(payload.forked_from_id) ? { forkedFromId: asString(payload.forked_from_id) } : {}),
     ...(title ? { title } : {}),
@@ -88,19 +94,26 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
 
   return metas
     .filter((meta) => !meta.parentThreadId || !metas.some(({ id }) => id === meta.parentThreadId))
-    .map((meta) => ({
-      sourceAgent: manifest.sourceAgent,
-      nativeSessionId: meta.id,
-      relativePaths: [meta.path, ...collectChildren(meta.id).map(({ path }) => path)].sort(),
-      ...(meta.title ? { title: meta.title } : {}),
-      ...(meta.workspace ? { workspace: meta.workspace } : {}),
-      ...(meta.version ? { sourceAgentVersion: meta.version } : {}),
-      ...(meta.startedAt ? { startedAt: meta.startedAt } : {}),
-      locator: {
-        mainPath: meta.path,
-        ...(meta.forkedFromId ? { parentNativeSessionId: meta.forkedFromId } : {})
-      }
-    }))
+    .map((meta) => {
+      const children = collectChildren(meta.id);
+      return {
+        sourceAgent: manifest.sourceAgent,
+        nativeSessionId: meta.id,
+        relativePaths: [meta.path, ...children.map(({ path }) => path)].sort(),
+        ...(meta.title ? { title: meta.title } : {}),
+        ...(meta.workspace ? { workspace: meta.workspace } : {}),
+        ...(meta.version ? { sourceAgentVersion: meta.version } : {}),
+        ...(meta.startedAt ? { startedAt: meta.startedAt } : {}),
+        turnCountEstimate: meta.turnCountEstimate + children.reduce(
+          (total, child) => total + child.turnCountEstimate,
+          0
+        ),
+        locator: {
+          mainPath: meta.path,
+          ...(meta.forkedFromId ? { parentNativeSessionId: meta.forkedFromId } : {})
+        }
+      };
+    })
     .sort((left, right) => (right.startedAt ?? "").localeCompare(left.startedAt ?? ""));
 }
 

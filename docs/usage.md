@@ -16,7 +16,7 @@ AgentJourney suggests native history roots for Claude Code, Codex CLI, Pi, and s
 For each source:
 
 1. Approve the exact Source Root.
-2. Preview Discovery results.
+2. Preview Discovery results, including each candidate's session date, source size, and estimated turns when the adapter can establish them.
 3. Select individual native sessions as the Capture Scope.
 4. Capture selected sessions.
 5. Optionally switch the root from manual to automatic scanning.

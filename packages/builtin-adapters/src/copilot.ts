@@ -16,7 +16,7 @@ import {
 
 const manifest = {
   id: "builtin.github-copilot-cli",
-  version: "0.2.0",
+  version: "0.2.1",
   interfaceVersion: "1.0.0",
   displayName: "GitHub Copilot CLI",
   sourceAgent: "github-copilot-cli",
@@ -59,6 +59,7 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
       }
     }
 
+    const turnCountEstimate = lines.filter(({ value }) => value?.type === "user.message").length;
     const sourceAgentVersion = asString(start.copilotVersion);
     const startedAt = normalizeTimestamp(start.startTime ?? startLine?.value?.timestamp);
     candidates.push({
@@ -69,6 +70,7 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
       ...(workspace ? { workspace } : {}),
       ...(sourceAgentVersion ? { sourceAgentVersion } : {}),
       ...(startedAt ? { startedAt } : {}),
+      turnCountEstimate,
       locator: { directory, eventsPath }
     });
   }

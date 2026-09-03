@@ -79,6 +79,7 @@ describe.each(cases)("$label adapter", ({ sourceAgent, adapter, nativeSessionId,
     const candidates = await adapter.discover(source);
     expect(candidates).toHaveLength(1);
     expect(candidates[0]?.nativeSessionId).toBe(nativeSessionId);
+    expect(candidates[0]?.turnCountEstimate).toBeGreaterThan(0);
 
     const interpretation = await adapter.interpret(candidates[0]!, source);
     assertInterpretationDocument(interpretation);

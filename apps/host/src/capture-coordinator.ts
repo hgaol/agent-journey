@@ -61,11 +61,22 @@ export class CaptureCoordinator {
   async discover(sourceAgent: string): Promise<DiscoveredJourney[]> {
     const { adapter, source } = await this.openApproved(sourceAgent);
     const candidates = await adapter.discover(source);
-    const entries = new Map((await source.list()).map((entry) => [entry.path, entry.size]));
-    const enriched = candidates.map((candidate) => ({
-      ...candidate,
-      byteSize: candidate.relativePaths.reduce((total, filePath) => total + (entries.get(filePath) ?? 0), 0)
-    }));
+    const entries = new Map((await source.list()).map((entry) => [entry.path.replaceAll("\\", "/"), entry]));
+    const enriched = candidates.map((candidate) => {
+      const candidateEntries = candidate.relativePaths.flatMap((filePath) => {
+        const entry = entries.get(filePath.replaceAll("\\", "/"));
+        return entry ? [entry] : [];
+      });
+      const lastModifiedAt = candidateEntries
+        .flatMap(({ modifiedAt }) => modifiedAt && !Number.isNaN(Date.parse(modifiedAt)) ? [modifiedAt] : [])
+        .sort((left, right) => Date.parse(left) - Date.parse(right))
+        .at(-1);
+      return {
+        ...candidate,
+        byteSize: candidateEntries.reduce((total, entry) => total + entry.size, 0),
+        ...(lastModifiedAt ? { lastModifiedAt } : {})
+      };
+    });
     const exclusions = await this.archive.listCaptureExclusions();
     const excluded = new Set(
       exclusions

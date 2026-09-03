@@ -56,6 +56,10 @@ _Avoid_: Directory, workspace, folder basename
 The identification of candidate coding-agent histories and their approximate scope before AgentJourney archives their content.
 _Avoid_: Capture, import
 
+**Turn Count Estimate**:
+A Discovery-only estimate derived from source-native human-prompt records so users can judge a candidate Journey's scope before Capture. It is not a Canonical Turn count and may be unavailable for third-party Source Adapters.
+_Avoid_: Exact turn count, Activity count
+
 **Capture**:
 The preservation of coding-agent activity for later inspection and replay. AgentJourney captures only activity already persisted by another system.
 _Avoid_: Logging, tracing
