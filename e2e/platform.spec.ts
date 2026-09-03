@@ -141,26 +141,52 @@ test("GitHub Copilot CLI renderer follows its native colorful TUI hierarchy", as
   const stage = page.frameLocator("iframe.journey-stage");
   await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
   await expect(stage.locator(".stage-native-tabs")).toBeVisible();
-  await expect(stage.locator(".stage-native-tabs .active")).toHaveCSS("background-color", "rgb(128, 211, 213)");
+  await expect(stage.locator(".stage-native-tabs .active")).toHaveCSS("background-color", "rgb(97, 214, 214)");
+  await expect(stage.locator(".stage-native-tabs span").nth(1)).toHaveCSS("background-color", "rgb(12, 12, 12)");
+  await expect(stage.locator(".stage-native-tabs span").nth(2)).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(stage.getByText("Model changed to copilot-test-model", { exact: true })).toBeVisible();
+  await expect(stage.locator('.activity[data-native-name="session.model_change"] .activity-marker')).toHaveCSS(
+    "color",
+    "rgb(59, 120, 255)"
+  );
   await expect(stage.locator(".stage-head")).toBeHidden();
   const copilotPrompt = stage.locator('.activity[data-kind="human-input"]').first();
   await expect(copilotPrompt).toHaveCSS("background-color", "rgb(12, 12, 12)");
   await expect(copilotPrompt.locator(".activity-time-full")).toBeHidden();
   await expect(copilotPrompt.locator(".activity-time-clock")).toHaveText(/^\d{1,2}:\d{2}$/u);
-  const shell = stage.locator('.activity[data-native-name="shell"]').first();
-  await expect(shell.locator(".activity-marker")).toHaveCSS("color", "rgb(248, 241, 174)");
-  await expect(shell.locator(".link-token")).toHaveCSS("color", "rgb(128, 211, 213)");
+  const intent = stage.locator('.activity[data-native-name="report_intent"]');
+  await expect(intent.locator(".activity-marker")).toHaveCSS("color", "rgb(22, 198, 12)");
+  await expect(intent.locator(".tool-native-summary")).toHaveText(
+    'intent: "Inspecting the greeting implementation" Intent logged'
+  );
+  const shell = stage.locator('.activity[data-capabilities~="shell"]').first();
+  await expect(shell.locator(".activity-marker")).toHaveCSS("color", "rgb(249, 241, 165)");
+  await expect(shell.locator(".native-name")).toHaveText("bash");
+  await expect(shell.locator(".native-name")).toHaveCSS("font-size", "0px");
+  await expect(shell.locator(".tool-native-summary")).toContainText("Check repository metadata");
+  await expect(shell.locator(".tool-line-count")).toHaveText("1 line…");
+  await expect(shell.locator(".tool-line-count")).toHaveCSS("margin-left", "4px");
+  await expect(shell.locator(".tool-native-elapsed")).toHaveText("10s");
+  await expect(shell.locator(".link-token")).toHaveCSS("color", "rgb(97, 214, 214)");
+  await expect(shell.locator(".tool-argument")).toHaveCSS("white-space", "nowrap");
+  await expect(shell.locator(".tool-argument")).toHaveCSS("text-overflow", "ellipsis");
   await expect(stage.locator('.activity[data-kind="agent-output"] .activity-marker').first()).toHaveCSS(
     "color",
-    "rgb(174, 76, 163)"
+    "rgb(188, 68, 167)"
   );
   const copilotToolResults = stage.locator('.activity[data-kind="tool-result"]');
-  await expect(copilotToolResults).toHaveCount(2);
+  await expect(copilotToolResults).toHaveCount(3);
   await expect(copilotToolResults.first()).toBeHidden();
   await expect(copilotToolResults.last()).toBeHidden();
+  await expect(stage.locator('.activity[data-kind="approval-request"]')).toBeHidden();
+  await expect(stage.locator('.activity[data-kind="approval-decision"]')).toBeHidden();
   await expect(stage.locator('.activity[data-kind="context-injection"]').first()).toBeHidden();
+  await expect(stage.locator(".stage-native-workspace")).toHaveText("/workspace/acme");
+  await expect(stage.locator(".stage-native-workspace")).toBeVisible();
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
+  await expect(stage.locator(".stage-native-composer > span")).toBeHidden();
+  await expect(stage.locator(".stage-native-footer-key")).toHaveCount(4);
+  await expect(stage.locator(".stage-native-footer-effort")).toHaveText(" · Medium");
   await expectNativeChromeDocked(page, stage);
 });
 

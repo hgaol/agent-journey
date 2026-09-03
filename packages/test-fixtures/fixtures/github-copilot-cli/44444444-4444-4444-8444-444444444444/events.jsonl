@@ -5,17 +5,20 @@
 {"type":"user.message","timestamp":"2026-01-01T10:00:01.000Z","data":{"content":"Check the greeting implementation.","interactionId":"interaction-1"}}
 {"type":"assistant.turn_start","timestamp":"2026-01-01T10:00:01.500Z","data":{"turnId":"turn-1","interactionId":"interaction-1"}}
 {"type":"assistant.message","timestamp":"2026-01-01T10:00:02.000Z","data":{"messageId":"message-1","model":"copilot-test-model","reasoningText":"I should inspect the file.","content":"I will read it.","turnId":"turn-1"}}
-{"type":"tool.execution_start","timestamp":"2026-01-01T10:00:03.000Z","data":{"toolCallId":"tool-g-1","toolName":"view","arguments":{"path":"src/greeting.ts"},"turnId":"turn-1"}}
+{"type":"tool.execution_start","timestamp":"2026-01-01T10:00:02.500Z","data":{"toolCallId":"tool-g-intent","toolName":"report_intent","arguments":{"intent":"Inspecting the greeting implementation"},"turnId":"turn-1"}}
+{"type":"tool.execution_complete","timestamp":"2026-01-01T10:00:02.510Z","data":{"toolCallId":"tool-g-intent","turnId":"turn-1","success":true,"result":{"content":"Intent logged","detailedContent":"Inspecting the greeting implementation"}}}
+{"type":"tool.execution_start","timestamp":"2026-01-01T10:00:03.000Z","data":{"toolCallId":"tool-g-1","toolName":"view","arguments":{"path":"src/greeting.ts","description":"Inspect greeting source"},"turnId":"turn-1"}}
 {"type":"hook.start","timestamp":"2026-01-01T10:00:03.100Z","data":{"hookInvocationId":"hook-1","hookType":"preToolUse","input":{}}}
 {"type":"hook.end","timestamp":"2026-01-01T10:00:03.200Z","data":{"hookInvocationId":"hook-1","hookType":"preToolUse","success":true}}
 {"type":"tool.execution_complete","timestamp":"2026-01-01T10:00:04.000Z","data":{"toolCallId":"tool-g-1","turnId":"turn-1","success":true,"result":"export const greeting = 'hello';"}}
-{"type":"tool.execution_start","timestamp":"2026-01-01T10:00:04.100Z","data":{"toolCallId":"tool-g-shell","toolName":"Shell","arguments":{"command":"curl https://api.github.com/repos/acme/demo"},"turnId":"turn-1"}}
-{"type":"tool.execution_complete","timestamp":"2026-01-01T10:00:04.300Z","data":{"toolCallId":"tool-g-shell","turnId":"turn-1","success":true,"result":"request completed"}}
-{"type":"permission.requested","timestamp":"2026-01-01T10:00:04.500Z","data":{"requestId":"permission-1","promptRequest":"Allow the test command?"}}
-{"type":"permission.completed","timestamp":"2026-01-01T10:00:05.000Z","data":{"requestId":"permission-1","toolCallId":"tool-g-2","result":"approved"}}
-{"type":"assistant.message","timestamp":"2026-01-01T10:00:06.000Z","data":{"messageId":"message-2","model":"copilot-test-model","content":"The implementation is correct.","turnId":"turn-1"}}
-{"type":"subagent.started","timestamp":"2026-01-01T10:00:06.500Z","data":{"toolCallId":"subagent-g-1","agentName":"explore","agentDisplayName":"Explore","model":"copilot-test-model"}}
-{"type":"assistant.message","timestamp":"2026-01-01T10:00:06.600Z","data":{"messageId":"sub-message-1","model":"copilot-test-model","content":"Subagent inspected related files.","turnId":"turn-sub-1","parentToolCallId":"subagent-g-1"}}
-{"type":"subagent.completed","timestamp":"2026-01-01T10:00:06.700Z","data":{"toolCallId":"subagent-g-1","agentName":"explore","agentDisplayName":"Explore","model":"copilot-test-model","totalToolCalls":0,"totalTokens":10,"durationMs":100}}
-{"type":"assistant.turn_end","timestamp":"2026-01-01T10:00:07.000Z","data":{"turnId":"turn-1"}}
-{"type":"session.shutdown","timestamp":"2026-01-01T10:00:08.000Z","data":{"shutdownType":"normal","totalPremiumRequests":1,"tokenDetails":{"input":100,"output":25}}}
+{"type":"tool.execution_start","timestamp":"2026-01-01T10:00:04.100Z","data":{"toolCallId":"tool-g-shell","toolName":"bash","arguments":{"command":"curl https://api.github.com/repos/acme/demo","description":"Check repository metadata"},"turnId":"turn-1"}}
+{"type":"tool.execution_complete","timestamp":"2026-01-01T10:00:14.800Z","data":{"toolCallId":"tool-g-shell","turnId":"turn-1","success":true,"result":{"content":"request completed","detailedContent":"request completed"}}}
+{"type":"permission.requested","timestamp":"2026-01-01T10:00:14.900Z","data":{"requestId":"permission-1","promptRequest":"Allow the test command?"}}
+{"type":"permission.completed","timestamp":"2026-01-01T10:00:15.000Z","data":{"requestId":"permission-1","toolCallId":"tool-g-2","result":"approved"}}
+{"type":"assistant.message","timestamp":"2026-01-01T10:00:16.000Z","data":{"messageId":"message-2","model":"copilot-test-model","content":"The implementation is correct.","turnId":"turn-1"}}
+{"type":"subagent.started","timestamp":"2026-01-01T10:00:16.500Z","data":{"toolCallId":"subagent-g-1","agentName":"explore","agentDisplayName":"Explore","model":"copilot-test-model"}}
+{"type":"assistant.message","timestamp":"2026-01-01T10:00:16.600Z","data":{"messageId":"sub-message-1","model":"copilot-test-model","content":"Subagent inspected related files.","turnId":"turn-sub-1","parentToolCallId":"subagent-g-1"}}
+{"type":"subagent.completed","timestamp":"2026-01-01T10:00:16.700Z","data":{"toolCallId":"subagent-g-1","agentName":"explore","agentDisplayName":"Explore","model":"copilot-test-model","totalToolCalls":0,"totalTokens":10,"durationMs":100}}
+{"type":"assistant.turn_end","timestamp":"2026-01-01T10:00:17.000Z","data":{"turnId":"turn-1"}}
+{"type":"session.remote_steerable_changed","timestamp":"2026-01-01T10:00:17.500Z","data":{"enabled":false}}
+{"type":"session.shutdown","timestamp":"2026-01-01T10:00:18.000Z","data":{"shutdownType":"normal","totalPremiumRequests":1,"tokenDetails":{"input":100,"output":25}}}

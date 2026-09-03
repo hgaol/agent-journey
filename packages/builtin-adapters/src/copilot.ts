@@ -16,7 +16,7 @@ import {
 
 const manifest = {
   id: "builtin.github-copilot-cli",
-  version: "0.2.1",
+  version: "0.2.2",
   interfaceVersion: "1.0.0",
   displayName: "GitHub Copilot CLI",
   sourceAgent: "github-copilot-cli",
@@ -404,8 +404,8 @@ async function interpret(candidate: DiscoveredJourney, bundle: SourceBundleView)
           payload: jsonValue(data)
         })
       );
-    } else if (type === "hook.start" || type === "hook.end") {
-      builder.disposition(line.anchor, "transport", [], `${type} retained as hook transport detail`);
+    } else if (type === "hook.start" || type === "hook.end" || type === "session.remote_steerable_changed") {
+      builder.disposition(line.anchor, "transport", [], `${type} retained as transport detail`);
       continue;
     } else {
       builder.unclassified(line, `unknown Copilot CLI event type: ${type}`);

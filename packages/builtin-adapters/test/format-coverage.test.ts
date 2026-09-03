@@ -147,6 +147,17 @@ describe("built-in source format coverage", () => {
     expect(frames.every(({ timing }) => timing === "evidenced")).toBe(true);
   });
 
+  it("treats remote-steerability control records as transport rather than transcript activity", async () => {
+    const source = new MemorySource(await readTree(fixturePath("github-copilot-cli")));
+    const [candidate] = await copilotCliAdapter.discover(source);
+    const interpretation = await copilotCliAdapter.interpret(candidate!, source);
+    const disposition = interpretation.coverage.dispositions.find(({ detail }) =>
+      detail?.includes("session.remote_steerable_changed")
+    );
+    expect(disposition).toMatchObject({ disposition: "transport" });
+    expect(disposition?.activityIds).toBeUndefined();
+  });
+
   it("retains evidenced native turn identifiers where available", async () => {
     const source = new MemorySource(await readTree(fixturePath("github-copilot-cli")));
     const [candidate] = await copilotCliAdapter.discover(source);
