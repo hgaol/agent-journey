@@ -15,7 +15,7 @@ import type {
 } from "@agentjourney/contracts";
 import type { RendererPlugin } from "@agentjourney/plugin-sdk";
 import { buildStageSource, projectStageDocument } from "@agentjourney/portability";
-import { chromium, type Browser, type Page } from "playwright-core";
+import { chromium, webkit, type Browser, type Page } from "playwright-core";
 
 const MAX_UNIQUE_FRAMES = 5_000;
 const MAX_DURATION_MS = 2 * 60 * 60 * 1_000;
@@ -52,11 +52,13 @@ export interface ReplayVideoFramePlan {
 export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOptionsDocument {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Video export options are required");
   const input = value as Record<string, unknown>;
+  const browser = input.browser ?? "auto";
   const quality = input.quality;
   const speed = input.speed;
   const fps = input.fps;
   const streamMode = input.streamMode;
   if (typeof input.rendererId !== "string" || !input.rendererId) throw new Error("Renderer is required");
+  if (!(["auto", "chromium", "chrome", "edge", "webkit"] as const).includes(browser as never)) throw new Error("Unsupported rendering engine");
   if (!(["720p", "1080p", "1440p"] as const).includes(quality as never)) throw new Error("Unsupported video quality");
   if (!([0.5, 1, 2, 4, 8, 16] as const).includes(speed as never)) throw new Error("Unsupported video speed");
   if (fps !== 30 && fps !== 60) throw new Error("Unsupported frame rate");
@@ -64,6 +66,7 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
   if (typeof input.reveal !== "boolean") throw new Error("Video redaction selection is required");
   return {
     rendererId: input.rendererId,
+    browser: browser as NonNullable<ReplayVideoExportOptionsDocument["browser"]>,
     quality: quality as ReplayVideoExportOptionsDocument["quality"],
     speed: speed as ReplayVideoExportOptionsDocument["speed"],
     fps,
@@ -117,19 +120,68 @@ function stageAtFrame(
   });
 }
 
-async function launchBrowser(): Promise<Browser> {
-  const executablePath = process.env.AGENTJOURNEY_CHROME_EXECUTABLE;
-  if (executablePath) return chromium.launch({ executablePath, headless: true });
-  try {
-    return await chromium.launch({ headless: true });
-  } catch (firstError) {
+interface LaunchedBrowser {
+  browser: Browser;
+  label: "CHROMIUM" | "GOOGLE CHROME" | "MICROSOFT EDGE" | "WEBKIT";
+}
+
+interface BrowserCandidate {
+  name: string;
+  label: LaunchedBrowser["label"];
+  launch: () => Promise<Browser>;
+}
+
+function browserCandidates(preference: NonNullable<ReplayVideoExportOptionsDocument["browser"]>): BrowserCandidate[] {
+  const configured = process.env.AGENTJOURNEY_BROWSER_EXECUTABLE;
+  const legacyChrome = process.env.AGENTJOURNEY_CHROME_EXECUTABLE;
+  const edgeExecutable = process.env.AGENTJOURNEY_EDGE_EXECUTABLE;
+  const candidates: Record<Exclude<typeof preference, "auto">, BrowserCandidate[]> = {
+    chromium: [
+      ...(configured ? [{ name: "configured Chromium", label: "CHROMIUM" as const, launch: () => chromium.launch({ executablePath: configured, headless: true }) }] : []),
+      { name: "Playwright Chromium", label: "CHROMIUM", launch: () => chromium.launch({ headless: true }) }
+    ],
+    chrome: [
+      ...(configured || legacyChrome ? [{ name: "configured Google Chrome", label: "GOOGLE CHROME" as const, launch: () => chromium.launch({ executablePath: configured ?? legacyChrome!, headless: true }) }] : []),
+      { name: "Google Chrome", label: "GOOGLE CHROME", launch: () => chromium.launch({ channel: "chrome", headless: true }) }
+    ],
+    edge: [
+      ...(configured || edgeExecutable ? [{ name: "configured Microsoft Edge", label: "MICROSOFT EDGE" as const, launch: () => chromium.launch({ executablePath: configured ?? edgeExecutable!, headless: true }) }] : []),
+      { name: "Microsoft Edge", label: "MICROSOFT EDGE", launch: () => chromium.launch({ channel: "msedge", headless: true }) },
+      { name: "Microsoft Edge Beta", label: "MICROSOFT EDGE", launch: () => chromium.launch({ channel: "msedge-beta", headless: true }) },
+      { name: "Microsoft Edge Dev", label: "MICROSOFT EDGE", launch: () => chromium.launch({ channel: "msedge-dev", headless: true }) },
+      { name: "Microsoft Edge Canary", label: "MICROSOFT EDGE", launch: () => chromium.launch({ channel: "msedge-canary", headless: true }) }
+    ],
+    webkit: [
+      { name: "Playwright WebKit", label: "WEBKIT", launch: () => webkit.launch({ headless: true }) }
+    ]
+  };
+  return preference === "auto"
+    ? [...candidates.chromium, ...candidates.chrome, ...candidates.edge, ...candidates.webkit]
+    : candidates[preference];
+}
+
+export function replayVideoBrowserNames(
+  preference: NonNullable<ReplayVideoExportOptionsDocument["browser"]>
+): string[] {
+  return browserCandidates(preference).map(({ name }) => name);
+}
+
+async function launchBrowser(
+  preference: NonNullable<ReplayVideoExportOptionsDocument["browser"]>
+): Promise<LaunchedBrowser> {
+  const failures: string[] = [];
+  for (const candidate of browserCandidates(preference)) {
     try {
-      return await chromium.launch({ channel: "chrome", headless: true });
-    } catch {
-      const detail = firstError instanceof Error ? ` (${firstError.message.split("\n")[0]})` : "";
-      throw new Error(`MP4 export requires a local Chromium or Google Chrome installation${detail}`);
+      return { browser: await candidate.launch(), label: candidate.label };
+    } catch (error) {
+      failures.push(`${candidate.name}: ${error instanceof Error ? error.message.split("\n")[0] : "launch failed"}`);
     }
   }
+  throw new Error(
+    `No local rendering engine is available for MP4 export. Tried ${failures.map((failure) => failure.split(":")[0]).join(", ")}. `
+    + "Install Microsoft Edge or Google Chrome, run 'pnpm exec playwright install chromium' (or 'webkit'), "
+    + `or set AGENTJOURNEY_BROWSER_EXECUTABLE. Launch errors: ${failures.join(" | ")}`
+  );
 }
 
 async function connectStage(page: Page): Promise<void> {
@@ -210,7 +262,8 @@ export class LocalReplayVideoExporter implements ReplayVideoExporter {
       temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "agentjourney-video-"));
       const plan = planReplayVideo(input.stage, input.options);
       const quality = QUALITY[input.options.quality];
-      browser = await launchBrowser();
+      const launched = await launchBrowser(input.options.browser ?? "auto");
+      browser = launched.browser;
       const context = await browser.newContext({
         viewport: { width: quality.width, height: quality.height },
         deviceScaleFactor: 1
@@ -218,7 +271,11 @@ export class LocalReplayVideoExporter implements ReplayVideoExporter {
       const page = await context.newPage();
       await page.setContent(buildStageSource(input.renderer), { waitUntil: "load" });
       await connectStage(page);
-      await addExportBadge(page, input.options, input.renderer.manifest.displayName);
+      await addExportBadge(
+        page,
+        input.options,
+        `${input.renderer.manifest.displayName} · ${launched.label}`
+      );
       await page.addStyleTag({ content: "*{animation:none!important;transition:none!important}html{scroll-behavior:auto!important}" });
       const imagePaths: string[] = [];
       for (const [index, frame] of plan.frames.entries()) {

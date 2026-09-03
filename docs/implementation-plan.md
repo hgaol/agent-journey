@@ -64,7 +64,7 @@ All defined milestones are implemented and verified. Follow-up work should be dr
 - [x] checksummed, data-only, lossless Journey Package export/import
 - [x] imported Interpretation provenance and compatible local reinterpretation
 - [x] sanitized self-contained HTML Presentation Export with no third-party executable code
-- [x] configurable local H.264 MP4 Replay Video Export for Style Packs
+- [x] configurable local H.264 MP4 Replay Video Export for Style Packs with Chromium, Chrome, Edge, and optional WebKit rendering
 - [x] archive object, Interpretation, permission, and search-index verification
 - [x] search-index repair
 - [x] explicit Retention Policies with physical unreferenced-object collection

@@ -18,6 +18,7 @@ export function VideoExportDialog(props: {
   onClose: () => void;
   onExport: (options: ReplayVideoExportOptionsDocument) => Promise<void>;
 }): React.ReactNode {
+  const [browser, setBrowser] = useState<NonNullable<ReplayVideoExportOptionsDocument["browser"]>>("auto");
   const [quality, setQuality] = useState<ReplayVideoExportOptionsDocument["quality"]>("1080p");
   const [speed, setSpeed] = useState<ReplayVideoExportOptionsDocument["speed"]>(1);
   const [fps, setFps] = useState<ReplayVideoExportOptionsDocument["fps"]>(30);
@@ -35,6 +36,7 @@ export function VideoExportDialog(props: {
     try {
       await props.onExport({
         rendererId,
+        browser,
         quality,
         speed,
         fps,
@@ -71,6 +73,17 @@ export function VideoExportDialog(props: {
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          Rendering engine
+          <select value={browser} onChange={(event) => setBrowser(event.target.value as NonNullable<ReplayVideoExportOptionsDocument["browser"]>)} disabled={exporting}>
+            <option value="auto">Auto · Chromium, Chrome, Edge, then WebKit</option>
+            <option value="chromium">Playwright Chromium</option>
+            <option value="chrome">Google Chrome</option>
+            <option value="edge">Microsoft Edge · Stable/Beta/Dev/Canary</option>
+            <option value="webkit">WebKit · Safari-compatible</option>
+          </select>
+          <small>WebKit uses Playwright's Safari-compatible engine; installed Safari itself cannot run headlessly.</small>
         </label>
         <label>
           Quality

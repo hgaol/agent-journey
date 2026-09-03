@@ -4,6 +4,7 @@ import { rendererForSourceAgent } from "@agentjourney/builtin-renderers";
 import {
   LocalReplayVideoExporter,
   planReplayVideo,
+  replayVideoBrowserNames,
   validateReplayVideoOptions
 } from "../src/replay-video-exporter.js";
 
@@ -66,9 +67,22 @@ const options = validateReplayVideoOptions({
 
 describe("Replay video export", () => {
   it("validates bounded quality, speed, frame-rate, and streaming options", () => {
-    expect(options).toMatchObject({ quality: "720p", speed: 1, fps: 30, streamMode: "events" });
+    expect(options).toMatchObject({ browser: "auto", quality: "720p", speed: 1, fps: 30, streamMode: "events" });
     expect(() => validateReplayVideoOptions({ ...options, speed: 3 })).toThrow(/speed/u);
     expect(() => validateReplayVideoOptions({ ...options, quality: "4k" })).toThrow(/quality/u);
+  });
+
+  it("falls back through Chrome and Edge, with optional Safari-compatible WebKit", () => {
+    const automatic = replayVideoBrowserNames("auto");
+    expect(automatic).toEqual(expect.arrayContaining([
+      "Playwright Chromium",
+      "Google Chrome",
+      "Microsoft Edge",
+      "Playwright WebKit"
+    ]));
+    expect(automatic.indexOf("Microsoft Edge")).toBeGreaterThan(automatic.indexOf("Google Chrome"));
+    expect(replayVideoBrowserNames("edge")).toContain("Microsoft Edge");
+    expect(replayVideoBrowserNames("webkit")).toEqual(["Playwright WebKit"]);
   });
 
   it("plans faster playback without changing Replay frames", () => {

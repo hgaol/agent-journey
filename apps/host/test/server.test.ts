@@ -31,6 +31,7 @@ describe("loopback host", () => {
     const pluginRegistry = new PluginRegistry(dataRoot);
     await pluginRegistry.load();
     let exportedQuality: string | undefined;
+    let exportedBrowser: string | undefined;
     const app = await createServer({
       archive,
       settings,
@@ -41,6 +42,7 @@ describe("loopback host", () => {
       videoExporter: {
         async exportReplay(input) {
           exportedQuality = input.options.quality;
+          exportedBrowser = input.options.browser;
           return {
             bytes: new Uint8Array([0, 0, 0, 16, 102, 116, 121, 112]),
             fileName: "fixture.mp4",
@@ -120,6 +122,7 @@ describe("loopback host", () => {
       headers,
       payload: {
         rendererId: "builtin.pi",
+        browser: "edge",
         quality: "720p",
         speed: 2,
         fps: 30,
@@ -131,6 +134,7 @@ describe("loopback host", () => {
     expect(video.headers["content-type"]).toContain("video/mp4");
     expect(video.headers["content-disposition"]).toContain("fixture.mp4");
     expect(exportedQuality).toBe("720p");
+    expect(exportedBrowser).toBe("edge");
 
     const search = await app.inject({ method: "GET", url: "/api/v1/search?q=greeting&sourceAgent=pi", headers });
     expect(search.statusCode).toBe(200);

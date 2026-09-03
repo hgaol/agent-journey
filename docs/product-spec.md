@@ -74,7 +74,7 @@ Global Search indexes Canonical Activity and metadata, not arbitrary raw bytes. 
 
 - `.agentjourney` Journey Packages are checksummed, lossless, unencrypted, data-only, and re-importable.
 - HTML Presentation Exports are derived, redacted by default, contain no third-party executable code, and are not evidence packages.
-- Replay Video Exports are silent local H.264 MP4 presentations with user-selected Style Pack, quality, 0.5×–16× speed, frame rate, streaming mode, and redaction. Simulated cadence is permanently labeled.
+- Replay Video Exports are silent local H.264 MP4 presentations with user-selected Style Pack, local Chromium/Chrome/Edge/WebKit engine, quality, 0.5×–16× speed, frame rate, streaming mode, and redaction. Simulated cadence is permanently labeled.
 
 ## Implementation status
 

@@ -307,6 +307,12 @@ test("exports a configurable source-native Replay as MP4", async ({ page }) => {
   await page.getByRole("button", { name: "export mp4" }).click();
   const dialog = page.getByRole("dialog", { name: "Export Replay as MP4" });
   await expect(dialog).toBeVisible();
+  const renderingEngine = dialog.getByLabel("Rendering engine");
+  await expect(renderingEngine.locator('option[value="edge"]')).toContainText("Microsoft Edge");
+  await expect(renderingEngine.locator('option[value="webkit"]')).toContainText("Safari-compatible");
+  await renderingEngine.selectOption("edge");
+  await expect(renderingEngine).toHaveValue("edge");
+  await renderingEngine.selectOption("auto");
   await dialog.getByLabel("Quality").selectOption("720p");
   await dialog.getByLabel("Playback speed").selectOption("8");
   await dialog.getByLabel("Frame rate").selectOption("30");
