@@ -4,7 +4,7 @@ import {
   canAutoPlayReplay,
   deriveReplayFrames,
   replayFrameDelay,
-  replayRemainingDuration,
+  replayRemainingDurations,
   type ReplayStreamMode
 } from "@agentjourney/activity-graph";
 
@@ -24,7 +24,6 @@ export function useReplay(
   const [streamingSpeed, setStreamingSpeed] = useState(1);
   const [typingSpeed, setTypingSpeed] = useState(1);
   const [holdingFirstFrame, setHoldingFirstFrame] = useState(false);
-  const [remainingMs, setRemainingMs] = useState(0);
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
   const replayVariant = `${streamMode}:${simulateHumanInput ? "typed-prompts" : "instant-prompts"}`;
   const previousReplayVariant = useRef(replayVariant);
@@ -44,22 +43,19 @@ export function useReplay(
     if (index > Math.max(0, frames.length - 1)) setIndex(Math.max(0, frames.length - 1));
   }, [frames.length, index]);
 
-  const plannedRemainingMs = useMemo(() => replayRemainingDuration(frames, index, {
+  const remainingDurations = useMemo(() => replayRemainingDurations(frames, {
     timelineSpeed: speed,
     streamingSpeed,
-    typingSpeed,
-    ...(holdingFirstFrame && index === 0 ? { firstFrameMinimumMs: 400 } : {})
-  }), [frames, holdingFirstFrame, index, speed, streamingSpeed, typingSpeed]);
-
-  useEffect(() => {
-    setRemainingMs(plannedRemainingMs);
-    if (!playing || plannedRemainingMs <= 0) return;
-    const startedAt = window.performance.now();
-    const interval = window.setInterval(() => {
-      setRemainingMs(Math.max(0, plannedRemainingMs - (window.performance.now() - startedAt)));
-    }, 100);
-    return () => window.clearInterval(interval);
-  }, [plannedRemainingMs, playing]);
+    typingSpeed
+  }), [frames, speed, streamingSpeed, typingSpeed]);
+  const firstFrameAdjustment = holdingFirstFrame && index === 0 && frames.length > 1
+    ? Math.max(0, 400 - replayFrameDelay(frames[0]!, frames[1]!, {
+        timelineSpeed: speed,
+        streamingSpeed,
+        typingSpeed
+      }))
+    : 0;
+  const plannedRemainingMs = (remainingDurations[index] ?? 0) + firstFrameAdjustment;
 
   useEffect(() => {
     if (!playing || !canAutoPlay || index >= frames.length - 1) {
@@ -123,7 +119,7 @@ export function useReplay(
     typingSpeed,
     setTypingSpeed,
     current: frames[index],
-    remainingMs,
+    plannedRemainingMs,
     canAutoPlay,
     streamMode,
     restart: (autoPlay = canAutoPlay) => {

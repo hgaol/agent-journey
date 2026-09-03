@@ -358,21 +358,30 @@ export function replayFrameDelay(
   );
 }
 
+export function replayRemainingDurations(
+  frames: readonly ReplayFrame[],
+  options: ReplayDelayOptions
+): number[] {
+  const remaining = new Array<number>(frames.length).fill(0);
+  for (let frameIndex = frames.length - 2; frameIndex >= 0; frameIndex -= 1) {
+    remaining[frameIndex] = remaining[frameIndex + 1]!
+      + replayFrameDelay(frames[frameIndex]!, frames[frameIndex + 1]!, options);
+  }
+  return remaining;
+}
+
 export function replayRemainingDuration(
   frames: readonly ReplayFrame[],
   currentIndex: number,
   options: ReplayDelayOptions & { firstFrameMinimumMs?: number }
 ): number {
   const index = Math.max(0, Math.min(Math.floor(currentIndex), Math.max(0, frames.length - 1)));
-  let remaining = 0;
-  for (let frameIndex = index; frameIndex < frames.length - 1; frameIndex += 1) {
-    let delay = replayFrameDelay(frames[frameIndex]!, frames[frameIndex + 1]!, options);
-    if (frameIndex === index && index === 0 && options.firstFrameMinimumMs !== undefined) {
-      delay = Math.max(options.firstFrameMinimumMs, delay);
-    }
-    remaining += delay;
+  let result = replayRemainingDurations(frames, options)[index] ?? 0;
+  if (index === 0 && frames.length > 1 && options.firstFrameMinimumMs !== undefined) {
+    const firstDelay = replayFrameDelay(frames[0]!, frames[1]!, options);
+    result += Math.max(options.firstFrameMinimumMs, firstDelay) - firstDelay;
   }
-  return remaining;
+  return result;
 }
 
 export function canAutoPlayReplay(

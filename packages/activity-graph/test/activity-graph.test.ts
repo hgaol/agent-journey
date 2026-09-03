@@ -7,7 +7,8 @@ import {
   deriveTurns,
   linearizeActivityGraph,
   replayFrameDelay,
-  replayRemainingDuration
+  replayRemainingDuration,
+  replayRemainingDurations
 } from "../src/index.js";
 
 function activity(id: string, kind: ActivityDocument["kind"], sourceOrder: number, extra: Partial<ActivityDocument> = {}): ActivityDocument {
@@ -162,6 +163,7 @@ describe("Activity Graph", () => {
     });
     expect(normal).toBe(3000);
     expect(fast).toBe(1500);
+    expect(replayRemainingDurations(frames, { timelineSpeed: 1, streamingSpeed: 1 })).toEqual([3000, 2000, 0]);
     expect(replayRemainingDuration(frames, 2, { timelineSpeed: 1, streamingSpeed: 1 })).toBe(0);
   });
 

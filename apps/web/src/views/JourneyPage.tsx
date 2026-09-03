@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { builtInStylePacks, rendererForSourceAgent } from "@agentjourney/builtin-renderers";
@@ -45,6 +45,134 @@ function replayClock(milliseconds: number | undefined): string {
   return `${String(minutes).padStart(2, "0")}:${seconds.toFixed(1).padStart(4, "0")}`;
 }
 
+function ReplayRemainingTime(props: {
+  plannedRemainingMs: number;
+  playing: boolean;
+  canAutoPlay: boolean;
+}): React.ReactNode {
+  const [remainingMs, setRemainingMs] = useState(props.plannedRemainingMs);
+  useEffect(() => {
+    setRemainingMs(props.plannedRemainingMs);
+    if (!props.playing || props.plannedRemainingMs <= 0) return;
+    const startedAt = window.performance.now();
+    const interval = window.setInterval(() => {
+      setRemainingMs(Math.max(0, props.plannedRemainingMs - (window.performance.now() - startedAt)));
+    }, 100);
+    return () => window.clearInterval(interval);
+  }, [props.plannedRemainingMs, props.playing]);
+  return (
+    <code
+      className="terminal-remaining-time"
+      data-testid="replay-remaining-time"
+      title={props.canAutoPlay
+        ? "Estimated remaining time after timeline, streaming, and typing speed settings"
+        : "Remaining time is unavailable for manual-only Replay"}
+    >{props.canAutoPlay ? `left ${replayClock(remainingMs)}` : "left · manual"}</code>
+  );
+}
+
+const ThreadRail = memo(function ThreadRail(props: {
+  threads: StageDocument["threads"];
+  activities: StageDocument["activities"];
+  selectedThreadId: string;
+  onSeek: (activityId: string) => void;
+}): React.ReactNode {
+  const summaries = useMemo(() => {
+    const result = new Map<string, { firstActivityId?: string; count: number }>();
+    for (const activity of props.activities) {
+      const summary = result.get(activity.threadId) ?? { count: 0 };
+      summary.firstActivityId ??= activity.id;
+      summary.count += 1;
+      result.set(activity.threadId, summary);
+    }
+    return result;
+  }, [props.activities]);
+  return (
+    <section>
+      <h2>THREADS <span>{props.threads.length}</span></h2>
+      {props.threads.map((thread) => {
+        const summary = summaries.get(thread.id);
+        return (
+          <button
+            key={thread.id}
+            className={thread.id === props.selectedThreadId ? "active" : ""}
+            disabled={!summary?.firstActivityId}
+            onClick={() => summary?.firstActivityId && props.onSeek(summary.firstActivityId)}
+          >
+            <i>{thread.id === "main" ? "●" : "├"}</i>
+            <span>{thread.label ?? (thread.id === "main" ? "main" : thread.id.replace(/^agent:/u, "agent "))}</span>
+            <small>{summary?.count ?? 0}</small>
+          </button>
+        );
+      })}
+    </section>
+  );
+});
+
+const TurnRail = memo(function TurnRail(props: {
+  turns: StageDocument["turns"];
+  selectedTurnId: string | undefined;
+  onSeek: (activityId: string) => void;
+}): React.ReactNode {
+  return (
+    <section className="terminal-turn-list">
+      <h2>TURNS <span>{props.turns.length}</span></h2>
+      {props.turns.map((turn, index) => {
+        const firstActivityId = turn.activityIds[0];
+        return (
+          <button
+            key={turn.id}
+            className={turn.id === props.selectedTurnId ? "active" : ""}
+            disabled={!firstActivityId}
+            onClick={() => firstActivityId && props.onSeek(firstActivityId)}
+          >
+            <i>{turn.boundaryProvenance === "evidenced" ? "◆" : "◇"}</i>
+            <span>turn {index + 1}</span>
+            <small>{turn.activityIds.length}</small>
+          </button>
+        );
+      })}
+    </section>
+  );
+});
+
+const ActivityDetails = memo(function ActivityDetails(props: {
+  activity: ActivityDocument | undefined;
+  turnBoundaryProvenance: string | undefined;
+  onEvidence: (activityId: string) => void;
+  onAnnotate: (activity: ActivityDocument) => void;
+}): React.ReactNode {
+  const activity = props.activity;
+  return (
+    <section>
+      <h2>ACTIVITY</h2>
+      {activity ? (
+        <>
+          <strong className="terminal-selected-kind">{activityLabel(activity)}</strong>
+          <code className="terminal-anchor">{activity.evidenceAnchor}</code>
+          <dl>
+            <div><dt>kind</dt><dd>{activity.kind}</dd></div>
+            <div><dt>thread</dt><dd>{activity.threadId}</dd></div>
+            <div><dt>turn</dt><dd>{props.turnBoundaryProvenance ?? "—"}</dd></div>
+            <div><dt>source order</dt><dd>{activity.sourceOrder}</dd></div>
+            <div><dt>status</dt><dd>{activity.status ?? "—"}</dd></div>
+            <div><dt>timestamp</dt><dd>{activity.timestamp ?? "not evidenced"}</dd></div>
+          </dl>
+          <div className="terminal-inspector-actions">
+            <button onClick={() => props.onEvidence(activity.id)}>evidence</button>
+            <button onClick={() => props.onAnnotate(activity)}>annotate</button>
+            <button onClick={() => void navigator.clipboard.writeText(
+              activity.text ?? JSON.stringify(activity.payload)
+            )}>copy</button>
+          </div>
+          <h2>PAYLOAD</h2>
+          <pre>{displayPayload(activity)}</pre>
+        </>
+      ) : <p>no activity selected</p>}
+    </section>
+  );
+});
+
 export function JourneyPage(): React.ReactNode {
   const { journeyId } = useParams({ from: "/journeys/$journeyId" });
   const navigate = useNavigate();
@@ -83,6 +211,21 @@ export function JourneyPage(): React.ReactNode {
     view === "replay",
     simulatePromptTyping
   );
+  const activityById = useMemo(
+    () => new Map((journey.data?.stage.activities ?? []).map((activity) => [activity.id, activity])),
+    [journey.data?.stage.activities]
+  );
+  const turnByActivityId = useMemo(() => {
+    const result = new Map<string, StageDocument["turns"][number]>();
+    for (const turn of journey.data?.stage.turns ?? []) {
+      for (const activityId of turn.activityIds) result.set(activityId, turn);
+    }
+    return result;
+  }, [journey.data?.stage.turns]);
+  const hasSourceOrderFrames = useMemo(
+    () => replay.frames.some(({ timing }) => timing === "source-order"),
+    [replay.frames]
+  );
 
   useEffect(() => {
     if (!journey.data || rendererId || pluginRenderers.isLoading) return;
@@ -111,7 +254,7 @@ export function JourneyPage(): React.ReactNode {
     if (!journey.data) return undefined;
     const playheadFrame = replay.frames[replay.index];
     const inputActivity = playheadFrame?.simulatedInputTextLength !== undefined
-      ? journey.data.stage.activities.find(({ id }) => id === playheadFrame.activityId)
+      ? activityById.get(playheadFrame.activityId)
       : undefined;
     const simulatedInputDraft = inputActivity?.text !== undefined && playheadFrame?.simulatedInputTextLength !== undefined
       ? {
@@ -141,13 +284,13 @@ export function JourneyPage(): React.ReactNode {
           : {})
       }
     };
-  }, [journey.data, replay.frames, replay.index, reveal, selectedActivityId, stageSearch, streamMode, view]);
+  }, [activityById, journey.data, replay.frames, replay.index, reveal, selectedActivityId, stageSearch, streamMode, view]);
 
   const renderer = renderers.find(({ manifest }) => manifest.id === rendererId)
     ?? rendererForSourceAgent(journey.data?.summary.sourceAgent ?? "neutral-fallback");
   const rendererStage = useMemo(
-    () => stage ? projectStageDocument(stage) : undefined,
-    [stage]
+    () => renderer.executable && stage ? projectStageDocument(stage) : undefined,
+    [renderer.executable, stage]
   );
   const rendererTree = useQuery({
     queryKey: [
@@ -219,12 +362,16 @@ export function JourneyPage(): React.ReactNode {
     }
   };
 
-  const seekActivity = (activityId: string, replayMode = view === "replay"): void => {
+  const seekActivity = useCallback((activityId: string, replayMode = view === "replay"): void => {
     setSelectedActivityId(activityId);
     if (!replayMode) return;
     const index = replay.frames.findIndex((frame) => frame.activityId === activityId);
     if (index >= 0) replay.setIndex(index);
-  };
+  }, [replay.frames, replay.setIndex, view]);
+
+  const inspectEvidence = useCallback((activityId: string): void => {
+    setEvidenceSelection({ activityId });
+  }, []);
 
   const handleIntent = (intent: RendererIntent): void => {
     const activity = journey.data?.stage.activities.find(({ id }) => id === intent.activityId);
@@ -247,16 +394,11 @@ export function JourneyPage(): React.ReactNode {
   const detail = journey.data;
   const maxPlayhead = Math.max(0, replay.frames.length - 1);
   const currentFrame = replay.frames[replay.index];
-  const hasSourceOrderFrames = replay.frames.some(({ timing }) => timing === "source-order");
   const transportFrame = view === "replay" ? currentFrame : replay.frames.at(-1);
-  const selectedActivity = detail.stage.activities.find(({ id }) => id === selectedActivityId)
-    ?? (view === "replay"
-      ? detail.stage.activities.find(({ id }) => id === currentFrame?.activityId)
-      : detail.stage.activities.at(-1));
+  const selectedActivity = (selectedActivityId ? activityById.get(selectedActivityId) : undefined)
+    ?? (view === "replay" && currentFrame ? activityById.get(currentFrame.activityId) : detail.stage.activities.at(-1));
   const selectedThreadId = selectedActivity?.threadId ?? "main";
-  const selectedTurn = detail.stage.turns.find((turn) =>
-    selectedActivity ? turn.activityIds.includes(selectedActivity.id) : false
-  );
+  const selectedTurn = selectedActivity ? turnByActivityId.get(selectedActivity.id) : undefined;
   const selectedRevision = detail.revisions.find(({ id }) => id === detail.revisionId);
 
   const enterReplay = (): void => {
@@ -330,44 +472,18 @@ export function JourneyPage(): React.ReactNode {
             <small>{detail.summary.workspace ?? "workspace not evidenced"}</small>
           </section>
 
-          <section>
-            <h2>THREADS <span>{detail.stage.threads.length}</span></h2>
-            {detail.stage.threads.map((thread) => {
-              const firstActivity = detail.stage.activities.find(({ threadId }) => threadId === thread.id);
-              const count = detail.stage.activities.filter(({ threadId }) => threadId === thread.id).length;
-              return (
-                <button
-                  key={thread.id}
-                  className={thread.id === selectedThreadId ? "active" : ""}
-                  disabled={!firstActivity}
-                  onClick={() => firstActivity && seekActivity(firstActivity.id)}
-                >
-                  <i>{thread.id === "main" ? "●" : "├"}</i>
-                  <span>{thread.label ?? (thread.id === "main" ? "main" : thread.id.replace(/^agent:/u, "agent "))}</span>
-                  <small>{count}</small>
-                </button>
-              );
-            })}
-          </section>
+          <ThreadRail
+            threads={detail.stage.threads}
+            activities={detail.stage.activities}
+            selectedThreadId={selectedThreadId}
+            onSeek={seekActivity}
+          />
 
-          <section className="terminal-turn-list">
-            <h2>TURNS <span>{detail.stage.turns.length}</span></h2>
-            {detail.stage.turns.map((turn, index) => {
-              const firstActivityId = turn.activityIds[0];
-              return (
-                <button
-                  key={turn.id}
-                  className={turn.id === selectedTurn?.id ? "active" : ""}
-                  disabled={!firstActivityId}
-                  onClick={() => firstActivityId && seekActivity(firstActivityId)}
-                >
-                  <i>{turn.boundaryProvenance === "evidenced" ? "◆" : "◇"}</i>
-                  <span>turn {index + 1}</span>
-                  <small>{turn.activityIds.length}</small>
-                </button>
-              );
-            })}
-          </section>
+          <TurnRail
+            turns={detail.stage.turns}
+            selectedTurnId={selectedTurn?.id}
+            onSeek={seekActivity}
+          />
 
           <section className="terminal-history-selectors">
             <h2>HISTORY</h2>
@@ -462,32 +578,12 @@ export function JourneyPage(): React.ReactNode {
         </section>
 
         <aside className="terminal-activity-inspector">
-          <section>
-            <h2>ACTIVITY</h2>
-            {selectedActivity ? (
-              <>
-                <strong className="terminal-selected-kind">{activityLabel(selectedActivity)}</strong>
-                <code className="terminal-anchor">{selectedActivity.evidenceAnchor}</code>
-                <dl>
-                  <div><dt>kind</dt><dd>{selectedActivity.kind}</dd></div>
-                  <div><dt>thread</dt><dd>{selectedActivity.threadId}</dd></div>
-                  <div><dt>turn</dt><dd>{selectedTurn?.boundaryProvenance ?? "—"}</dd></div>
-                  <div><dt>source order</dt><dd>{selectedActivity.sourceOrder}</dd></div>
-                  <div><dt>status</dt><dd>{selectedActivity.status ?? "—"}</dd></div>
-                  <div><dt>timestamp</dt><dd>{selectedActivity.timestamp ?? "not evidenced"}</dd></div>
-                </dl>
-                <div className="terminal-inspector-actions">
-                  <button onClick={() => setEvidenceSelection({ activityId: selectedActivity.id })}>evidence</button>
-                  <button onClick={() => setAnnotationActivity(selectedActivity)}>annotate</button>
-                  <button onClick={() => void navigator.clipboard.writeText(
-                    selectedActivity.text ?? JSON.stringify(selectedActivity.payload)
-                  )}>copy</button>
-                </div>
-                <h2>PAYLOAD</h2>
-                <pre>{displayPayload(selectedActivity)}</pre>
-              </>
-            ) : <p>no activity selected</p>}
-          </section>
+          <ActivityDetails
+            activity={selectedActivity}
+            turnBoundaryProvenance={selectedTurn?.boundaryProvenance}
+            onEvidence={inspectEvidence}
+            onAnnotate={setAnnotationActivity}
+          />
 
           <section className="terminal-session-actions">
             <h2>SESSION</h2>
@@ -612,13 +708,11 @@ export function JourneyPage(): React.ReactNode {
           </button>
           <code title="Observed Replay position">{replayClock(transportFrame?.observedOffsetMs)}</code>
           {view === "replay" && (
-            <code
-              className="terminal-remaining-time"
-              data-testid="replay-remaining-time"
-              title={replay.canAutoPlay
-                ? "Estimated remaining time after speed and cadence settings"
-                : "Remaining time is unavailable for manual-only Replay"}
-            >{replay.canAutoPlay ? `left ${replayClock(replay.remainingMs)}` : "left · manual"}</code>
+            <ReplayRemainingTime
+              plannedRemainingMs={replay.plannedRemainingMs}
+              playing={replay.playing}
+              canAutoPlay={replay.canAutoPlay}
+            />
           )}
           <span>{view === "replay" ? replay.index + 1 : replay.frames.length}/{replay.frames.length}</span>
           <select

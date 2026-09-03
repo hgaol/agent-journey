@@ -40,7 +40,7 @@ All defined milestones are implemented and verified. Follow-up work should be dr
 - [x] independent 0.5×–16× Streaming Speed and Timeline Speed controls
 - [x] explicitly labeled composer-first Simulated Prompt Typing, independent 0.5×–4× Typing Speed, deadline scheduling, draft-only iframe updates, and visual submission
 - [x] Delivery Trace capture and chunk-level Replay frames
-- [x] deadline-stable typing/streaming cadence with incremental iframe updates for large Journeys
+- [x] deadline-stable typing/streaming cadence with incremental iframe updates, suffix-duration planning, and Activity-level timeline markers for large Journeys
 - [x] Agent Thread preservation and multi-lane timeline
 - [x] dynamic Fork lineage resolution
 - [x] timed playhead, scrubbing, speed, and explicit idle-gap compression
