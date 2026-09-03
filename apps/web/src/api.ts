@@ -8,6 +8,7 @@ import type {
   PendingEvidenceDocument,
   ProjectDocument,
   RendererTreeDocument,
+  ReplayVideoExportOptionsDocument,
   ReviewOverlayDocument,
   SearchHitDocument,
   SourceStatusDocument
@@ -215,6 +216,12 @@ export const api = {
   exportJourneyPackage: (journeyId: string) => download(`/api/v1/journeys/${encodeURIComponent(journeyId)}/export/package`),
   exportPresentation: (journeyId: string, rendererId: string, selection: { revisionId?: string; interpretationId?: string; reveal?: boolean }) =>
     download(`/api/v1/journeys/${encodeURIComponent(journeyId)}/export/html${queryString({ rendererId, ...selection })}`),
+  exportReplayVideo: (journeyId: string, options: ReplayVideoExportOptionsDocument) =>
+    download(`/api/v1/journeys/${encodeURIComponent(journeyId)}/export/mp4`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(options)
+    }),
   importSourceBundle: (sourceAgent: string, bytes: ArrayBuffer) => request<CaptureOutcome>(`/api/v1/imports/source-bundle/${encodeURIComponent(sourceAgent)}`, {
     method: "POST",
     headers: { "content-type": "application/vnd.agentjourney.source-bundle+zip" },
@@ -227,9 +234,16 @@ export const api = {
   })
 };
 
-async function download(url: string): Promise<{ blob: Blob; fileName: string }> {
-  const response = await fetch(url, { credentials: "include" });
-  if (!response.ok) throw new Error(`Export failed (${response.status})`);
+async function download(url: string, init: RequestInit = {}): Promise<{ blob: Blob; fileName: string }> {
+  const method = init.method ?? "GET";
+  const headers = new Headers(init.headers);
+  if (!headers.has("content-type") && init.body) headers.set("content-type", "application/json");
+  if (!["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())) headers.set("x-agentjourney-csrf", csrfToken);
+  const response = await fetch(url, { ...init, method, headers, credentials: "include" });
+  if (!response.ok) {
+    const body = await response.clone().json().catch(() => undefined) as { message?: string } | undefined;
+    throw new Error(body?.message ?? `Export failed (${response.status})`);
+  }
   const disposition = response.headers.get("content-disposition") ?? "";
   const fileName = /filename="([^"]+)"/u.exec(disposition)?.[1] ?? "agentjourney-export";
   return { blob: await response.blob(), fileName };

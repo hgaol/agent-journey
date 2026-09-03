@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
 import { fixturePath } from "@agentjourney/test-fixtures";
 
@@ -283,6 +284,27 @@ test("offers clearly labeled simulated TUI streaming when recorded chunks are un
     timeout: 5000
   });
   await expect(page.locator(".terminal-transport > small")).toContainText("stream 8×");
+});
+
+test("exports a configurable source-native Replay as MP4", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Read the greeting file.", { exact: true }).click();
+  await page.getByRole("button", { name: "export mp4" }).click();
+  const dialog = page.getByRole("dialog", { name: "Export Replay as MP4" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Quality").selectOption("720p");
+  await dialog.getByLabel("Playback speed").selectOption("8");
+  await dialog.getByLabel("Frame rate").selectOption("30");
+  await dialog.getByLabel("Replay content").selectOption("events");
+  const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
+  await dialog.getByRole("button", { name: "Export MP4" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/720p-8x\.mp4$/u);
+  const filePath = await download.path();
+  expect(filePath).not.toBeNull();
+  const bytes = await readFile(filePath!);
+  expect(bytes.byteLength).toBeGreaterThan(1_000);
+  expect(bytes.subarray(4, 8).toString("ascii")).toBe("ftyp");
 });
 
 test("terminal transcript fills the available center pane", async ({ page }) => {

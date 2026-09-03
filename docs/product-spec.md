@@ -74,7 +74,8 @@ Global Search indexes Canonical Activity and metadata, not arbitrary raw bytes. 
 
 - `.agentjourney` Journey Packages are checksummed, lossless, unencrypted, data-only, and re-importable.
 - HTML Presentation Exports are derived, redacted by default, contain no third-party executable code, and are not evidence packages.
+- Replay Video Exports are silent local H.264 MP4 presentations with user-selected Style Pack, quality, 0.5×–16× speed, frame rate, streaming mode, and redaction. Simulated cadence is permanently labeled.
 
 ## Implementation status
 
-The defined platform scope is implemented: four built-in adapters, raw-file and approved-root capture, immutable revisions and Interpretations, forensic evidence and redaction views, Review Overlays and Projects, filtered search, causal Replay with Turns/Delivery Traces/Agent Thread lanes, sandboxed third-party adapters and renderers, Journey Packages, sanitized HTML exports, retention/exclusion lifecycle, automatic Scan Policies, verification/repair, and source/build/browser test suites. See [`implementation-plan.md`](implementation-plan.md) for the completed checklist.
+The defined platform scope is implemented: four built-in adapters, raw-file and approved-root capture, immutable revisions and Interpretations, forensic evidence and redaction views, Review Overlays and Projects, filtered search, causal Replay with Turns/Delivery Traces/Agent Thread lanes, sandboxed third-party adapters and renderers, Journey Packages, sanitized HTML and configurable MP4 Replay exports, retention/exclusion lifecycle, automatic Scan Policies, verification/repair, and source/build/browser test suites. See [`implementation-plan.md`](implementation-plan.md) for the completed checklist.

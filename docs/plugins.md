@@ -9,6 +9,8 @@ Executable Renderer Plugins receive one immutable, presentation-redacted `StageD
 - **Style Pack** — scoped CSS only; uses the standard semantic stage renderer.
 - **Renderer** — scoped CSS plus precompiled JavaScript for custom stage DOM.
 
+Local MP4 Replay export supports Style Packs because the trusted host can deterministically render their standard Stage DOM without executing plugin code. Executable Renderers remain available for browser Review/Replay only; HTML and MP4 exports omit executable renderer code.
+
 Executable renderers register:
 
 ```js

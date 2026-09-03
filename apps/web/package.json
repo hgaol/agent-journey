@@ -13,6 +13,7 @@
     "@agentjourney/builtin-renderers": "workspace:*",
     "@agentjourney/contracts": "workspace:*",
     "@agentjourney/plugin-sdk": "workspace:*",
+    "@agentjourney/portability": "workspace:*",
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "^1.170.32",
     "@tanstack/react-virtual": "^3.14.10",

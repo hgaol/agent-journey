@@ -340,6 +340,10 @@ _Avoid_: Presentation Export, plugin package, backup screenshot
 A derived, non-authoritative presentation of selected Journey content using a chosen renderer and Presentation Redaction policy.
 _Avoid_: Source Evidence, Journey Package
 
+**Replay Video Export**:
+A local MP4 Presentation Export produced from deterministic Replay frames using a selected Style Pack, quality, 0.5×–16× speed, frame rate, streaming mode, and redaction policy. It contains no audio and is never Source Evidence or a terminal recording; simulated timing remains visibly labeled.
+_Avoid_: Terminal Fidelity, screen recording, evidence package
+
 **Retention Policy**:
 An explicit user instruction permitting specified archived revisions and evidence to be permanently removed. In the absence of such a policy, AgentJourney retains every revision.
 _Avoid_: Automatic cleanup, cache eviction

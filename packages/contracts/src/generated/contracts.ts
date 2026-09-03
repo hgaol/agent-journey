@@ -33,6 +33,7 @@ export interface ContractDocuments {
   sourceStatus?: SourceStatusDocument;
   discoveredJourney?: DiscoveredJourneyDocument;
   captureResult?: CaptureCommitResultDocument;
+  replayVideoExportOptions?: ReplayVideoExportOptionsDocument;
   searchHit?: SearchHitDocument;
   revisionSummary?: RevisionSummaryDocument;
   interpretationSummary?: InterpretationSummaryDocument;
@@ -292,6 +293,16 @@ export interface CaptureCommitResultDocument {
   newJourney: boolean;
   newRevision: boolean;
   newInterpretation: boolean;
+}
+export interface ReplayVideoExportOptionsDocument {
+  rendererId: string;
+  quality: "720p" | "1080p" | "1440p";
+  speed: 0.5 | 1 | 2 | 4 | 8 | 16;
+  fps: 30 | 60;
+  streamMode: "events" | "recorded" | "simulated";
+  reveal: boolean;
+  revisionId?: string;
+  interpretationId?: string;
 }
 export interface SearchHitDocument {
   journeyId: string;

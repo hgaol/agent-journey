@@ -74,3 +74,5 @@ Turns are evidenced when native turn IDs exist and otherwise marked inferred. De
 ## Portability
 
 Journey Packages carry data and checksums only. Imported Interpretation provenance remains external until a local adapter reproduces or replaces it. Presentation HTML receives a redacted Stage Document, escapes content, strips external CSS resources, omits plugin JavaScript, and uses only AgentJourney's fixed inline controls.
+
+Replay Video Export reuses the trusted interactive Stage source from the Portability module. The host derives bounded Replay frames, renders them in local Chromium, and passes variable-duration images to local FFmpeg for H.264 MP4 encoding. Browser and encoder are local-substitutable dependencies behind one `ReplayVideoExporter` interface; the loopback route and tests use the same interface.

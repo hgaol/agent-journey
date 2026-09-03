@@ -9,6 +9,7 @@ import { AutomaticScanner } from "./automatic-scanner.js";
 import { EventHub } from "./event-hub.js";
 import { createServer } from "./server.js";
 import { SettingsStore } from "./settings.js";
+import { LocalReplayVideoExporter } from "./replay-video-exporter.js";
 
 const dataDirectory = process.env.AGENTJOURNEY_DATA_DIR
   ? path.resolve(process.env.AGENTJOURNEY_DATA_DIR)
@@ -34,7 +35,17 @@ const thirdPartyAdapters = pluginRegistry.sourceAdapterPackages()
 const coordinator = new CaptureCoordinator([...builtInAdapters, ...thirdPartyAdapters], archive, settings, events);
 const automaticScanner = new AutomaticScanner(coordinator, settings);
 automaticScanner.start();
-const app = await createServer({ archive, settings, auth, events, coordinator, automaticScanner, pluginRegistry });
+const videoExporter = new LocalReplayVideoExporter();
+const app = await createServer({
+  archive,
+  settings,
+  auth,
+  events,
+  coordinator,
+  automaticScanner,
+  pluginRegistry,
+  videoExporter
+});
 const heartbeat = setInterval(() => events.heartbeat(), 20_000);
 heartbeat.unref();
 

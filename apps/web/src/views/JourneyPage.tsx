@@ -5,13 +5,15 @@ import { builtInStylePacks, rendererForSourceAgent } from "@agentjourney/builtin
 import type { ActivityDocument, StageDocument } from "@agentjourney/contracts";
 import type { RendererIntent } from "@agentjourney/plugin-sdk";
 import type { ReplayStreamMode } from "@agentjourney/activity-graph";
+import { projectStageDocument } from "@agentjourney/portability";
 import { api, saveDownload } from "../api.js";
 import { AnnotationDialog } from "../components/AnnotationDialog.js";
 import { CoveragePanel } from "../components/CoveragePanel.js";
 import { EvidenceInspector } from "../components/EvidenceInspector.js";
 import { OverlayEditor } from "../components/OverlayEditor.js";
 import { ReplayTimeline } from "../components/ReplayTimeline.js";
-import { StageFrame, projectStageDocument } from "../components/StageFrame.js";
+import { VideoExportDialog } from "../components/VideoExportDialog.js";
+import { StageFrame } from "../components/StageFrame.js";
 import { useReplay } from "../hooks/useReplay.js";
 import { shortId, sourceLabel } from "../source-brand.js";
 import "../terminal-journey.css";
@@ -73,6 +75,7 @@ export function JourneyPage(): React.ReactNode {
   const [showOverlay, setShowOverlay] = useState(false);
   const [showCoverage, setShowCoverage] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showVideoExport, setShowVideoExport] = useState(false);
   const replay = useReplay(journey.data?.stage.activities ?? [], streamMode);
 
   useEffect(() => {
@@ -492,6 +495,9 @@ export function JourneyPage(): React.ReactNode {
             >
               export package
             </button>
+            <button onClick={() => setShowVideoExport(true)}>
+              export mp4
+            </button>
             <button
               onClick={() => void api.exportPresentation(
                 journeyId,
@@ -685,6 +691,29 @@ export function JourneyPage(): React.ReactNode {
           journey={detail}
           projects={projects.data ?? []}
           onClose={() => setShowOverlay(false)}
+        />
+      )}
+      {showVideoExport && (
+        <VideoExportDialog
+          rendererId={renderer.javascript
+            ? rendererForSourceAgent(detail.summary.sourceAgent).manifest.id
+            : renderer.manifest.id}
+          renderers={renderers.map((candidate) => ({
+            id: candidate.manifest.id,
+            name: candidate.manifest.displayName,
+            stylePack: !candidate.javascript
+          }))}
+          initialStreamMode={streamMode === "events" && !replay.canAutoPlay ? "simulated" : streamMode}
+          recordedStreamingAvailable={detail.stage.fidelity.deliveryTraces}
+          reveal={reveal}
+          revisionId={detail.revisionId}
+          interpretationId={detail.interpretationId}
+          onClose={() => setShowVideoExport(false)}
+          onExport={async (options) => {
+            const result = await api.exportReplayVideo(journeyId, options);
+            saveDownload(result);
+            setShowVideoExport(false);
+          }}
         />
       )}
       {showCoverage && (

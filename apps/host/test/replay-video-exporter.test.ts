@@ -1,0 +1,96 @@
+import { describe, expect, it } from "vitest";
+import type { StageDocument } from "@agentjourney/contracts";
+import { rendererForSourceAgent } from "@agentjourney/builtin-renderers";
+import {
+  LocalReplayVideoExporter,
+  planReplayVideo,
+  validateReplayVideoOptions
+} from "../src/replay-video-exporter.js";
+
+function stage(timed = true): StageDocument {
+  return {
+    schemaVersion: "1.0.0",
+    journeyId: "journey-video-fixture",
+    revisionId: "revision",
+    interpretationId: "interpretation",
+    sourceAgent: "pi",
+    title: "Video fixture",
+    workspace: "/workspace/video",
+    models: ["test-model"],
+    activities: [
+      {
+        id: "prompt",
+        kind: "human-input",
+        evidenceAnchor: "session#L1",
+        threadId: "main",
+        sourceOrder: 1,
+        ...(timed ? { timestamp: "2026-01-01T00:00:00.000Z" } : {}),
+        text: "Check the video export."
+      },
+      {
+        id: "answer",
+        kind: "agent-output",
+        evidenceAnchor: "session#L2",
+        threadId: "main",
+        sourceOrder: 2,
+        ...(timed ? { timestamp: "2026-01-01T00:00:01.000Z" } : {}),
+        text: "Export complete."
+      }
+    ],
+    threads: [{ id: "main" }],
+    turns: [{ id: "turn", activityIds: ["prompt", "answer"], boundaryProvenance: "inferred" }],
+    annotations: [],
+    fidelity: {
+      contentKinds: ["human-input", "agent-output"],
+      timedKinds: timed ? ["human-input", "agent-output"] : [],
+      deliveryTraces: false,
+      agentThreads: false,
+      causalLinks: false,
+      terminalStream: false,
+      knownGaps: []
+    },
+    sensitiveFindingCount: 0,
+    coverageSummary: { sourceRecords: 2, canonicalActivities: 2, unclassified: 0, malformed: 0 },
+    presentation: { redacted: true, view: "review" }
+  };
+}
+
+const options = validateReplayVideoOptions({
+  rendererId: "builtin.pi",
+  quality: "720p",
+  speed: 1,
+  fps: 30,
+  streamMode: "events",
+  reveal: false
+});
+
+describe("Replay video export", () => {
+  it("validates bounded quality, speed, frame-rate, and streaming options", () => {
+    expect(options).toMatchObject({ quality: "720p", speed: 1, fps: 30, streamMode: "events" });
+    expect(() => validateReplayVideoOptions({ ...options, speed: 3 })).toThrow(/speed/u);
+    expect(() => validateReplayVideoOptions({ ...options, quality: "4k" })).toThrow(/quality/u);
+  });
+
+  it("plans faster playback without changing Replay frames", () => {
+    const normal = planReplayVideo(stage(), { speed: 1, streamMode: "events" });
+    const fast = planReplayVideo(stage(), { speed: 4, streamMode: "events" });
+    expect(fast.frames.map(({ activityId }) => activityId)).toEqual(normal.frames.map(({ activityId }) => activityId));
+    expect(fast.durationMs).toBeLessThan(normal.durationMs);
+  });
+
+  it("requires an explicit simulated stream for fully untimed histories", () => {
+    expect(() => planReplayVideo(stage(false), { speed: 1, streamMode: "events" })).toThrow(/Simulated/u);
+    expect(planReplayVideo(stage(false), { speed: 1, streamMode: "simulated" }).frames.length).toBeGreaterThan(1);
+  });
+
+  it("encodes a playable MP4 from source-native Replay frames", async () => {
+    const result = await new LocalReplayVideoExporter().exportReplay({
+      stage: stage(),
+      renderer: rendererForSourceAgent("pi"),
+      options
+    });
+    expect(result.frameCount).toBe(2);
+    expect(result.bytes.byteLength).toBeGreaterThan(1_000);
+    expect(Buffer.from(result.bytes).subarray(4, 8).toString("ascii")).toBe("ftyp");
+  }, 60_000);
+});

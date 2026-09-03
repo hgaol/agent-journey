@@ -24,3 +24,7 @@ Journey Packages are lossless and unencrypted. They may contain credentials and 
 ## HTML Presentation Export
 
 Presentation HTML receives a presentation-redacted Stage Document. User and source content is HTML-escaped, CSS external-resource constructs are stripped, and third-party renderer JavaScript is excluded. Only AgentJourney's fixed inline review/replay controls execute. The result is derived presentation, not Source Evidence and not re-importable as a Journey Package.
+
+## MP4 Replay Video Export
+
+Replay video is a silent, derived H.264 MP4 generated locally from projected Replay frames. The export records its selected quality, speed, frame rate, streaming mode, Style Pack, and redaction in the rendering itself; simulated cadence is visibly labeled. Temporary raster frames are deleted after encoding. MP4 is not Source Evidence, does not claim Terminal Fidelity, and is not re-importable.

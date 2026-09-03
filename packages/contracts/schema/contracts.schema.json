@@ -13,6 +13,7 @@
     "sourceStatus": { "$ref": "#/$defs/SourceStatusDocument" },
     "discoveredJourney": { "$ref": "#/$defs/DiscoveredJourneyDocument" },
     "captureResult": { "$ref": "#/$defs/CaptureCommitResultDocument" },
+    "replayVideoExportOptions": { "$ref": "#/$defs/ReplayVideoExportOptionsDocument" },
     "searchHit": { "$ref": "#/$defs/SearchHitDocument" },
     "revisionSummary": { "$ref": "#/$defs/RevisionSummaryDocument" },
     "interpretationSummary": { "$ref": "#/$defs/InterpretationSummaryDocument" },
@@ -610,6 +611,21 @@
         "byteSize": { "type": "integer", "minimum": 0 },
         "turnCountEstimate": { "type": "integer", "minimum": 0 },
         "locator": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "ReplayVideoExportOptionsDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rendererId", "quality", "speed", "fps", "streamMode", "reveal"],
+      "properties": {
+        "rendererId": { "type": "string", "minLength": 1 },
+        "quality": { "type": "string", "enum": ["720p", "1080p", "1440p"] },
+        "speed": { "type": "number", "enum": [0.5, 1, 2, 4, 8, 16] },
+        "fps": { "type": "integer", "enum": [30, 60] },
+        "streamMode": { "type": "string", "enum": ["events", "recorded", "simulated"] },
+        "reveal": { "type": "boolean" },
+        "revisionId": { "type": "string" },
+        "interpretationId": { "type": "string" }
       }
     },
     "CaptureCommitResultDocument": {

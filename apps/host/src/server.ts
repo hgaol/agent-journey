@@ -12,6 +12,10 @@ import type { AutomaticScanner } from "./automatic-scanner.js";
 import { evaluateRenderer, type PluginRegistry } from "@agentjourney/plugin-runtime";
 import { assertRendererTreeDocument, assertStageDocument } from "@agentjourney/contracts/validate";
 import { FilesystemSource } from "./filesystem-source.js";
+import {
+  validateReplayVideoOptions,
+  type ReplayVideoExporter
+} from "./replay-video-exporter.js";
 
 export interface ServerDependencies {
   archive: JourneyArchive;
@@ -21,6 +25,7 @@ export interface ServerDependencies {
   settings: SettingsStore;
   automaticScanner?: AutomaticScanner;
   pluginRegistry?: PluginRegistry;
+  videoExporter?: ReplayVideoExporter;
   logger?: boolean;
 }
 
@@ -336,6 +341,34 @@ export async function createServer(dependencies: ServerDependencies): Promise<Fa
       return reply.code(201).send(await dependencies.archive.importJourneyPackage(request.body));
     } catch (error) {
       return reply.code(400).send({ error: "package_import_failed", message: errorMessage(error) });
+    }
+  });
+
+  app.post("/api/v1/journeys/:journeyId/export/mp4", async (request, reply) => {
+    if (!dependencies.videoExporter) return reply.code(503).send({ error: "video_export_unavailable" });
+    const { journeyId } = request.params as { journeyId: string };
+    try {
+      const options = validateReplayVideoOptions(request.body);
+      const journey = await dependencies.archive.getJourney(journeyId, {
+        ...(options.revisionId ? { revisionId: options.revisionId } : {}),
+        ...(options.interpretationId ? { interpretationId: options.interpretationId } : {}),
+        redacted: !options.reveal
+      });
+      if (!journey) return reply.code(404).send({ error: "journey_not_found" });
+      const renderers = [...builtInStylePacks, ...(dependencies.pluginRegistry?.renderers() ?? [])];
+      const renderer = renderers.find(({ manifest }) => manifest.id === options.rendererId);
+      if (!renderer) return reply.code(400).send({ error: "renderer_not_found" });
+      const video = await dependencies.videoExporter.exportReplay({
+        stage: journey.stage,
+        renderer,
+        options
+      });
+      reply.header("content-disposition", `attachment; filename=\"${video.fileName}\"`);
+      reply.header("content-length", String(video.bytes.byteLength));
+      reply.type("video/mp4");
+      return reply.send(Buffer.from(video.bytes));
+    } catch (error) {
+      return reply.code(400).send({ error: "video_export_failed", message: errorMessage(error) });
     }
   });
 

@@ -1,0 +1,7 @@
+# Render Replay Video Exports locally from deterministic frames
+
+AgentJourney exports Replay video as a derived, silent H.264 MP4 by applying the selected Style Pack to the same projected Stage Documents used by browser Replay. The user explicitly selects renderer, 720p/1080p/1440p quality, 0.5×–16× speed, 30/60 fps, event/recorded/simulated streaming, and redaction policy. Simulated streaming is permanently labeled in-frame and never upgrades the Fidelity Manifest.
+
+The host renders each unique Replay frame in a local headless Chromium instance and encodes variable frame durations with a platform FFmpeg binary. It never sends Journey content over the network. Frame count and duration are bounded, concurrent export is rejected, temporary images are deleted, and wholly untimed histories require explicitly selected Simulated Streaming. Executable third-party Renderers remain HTML-only for now; MP4 supports built-in and third-party Style Packs whose scoped CSS can be rendered without executing plugin code.
+
+This adds substantial local browser and encoder dependencies, but avoids screen-capture permission prompts, preserves source-native Stage styling, keeps timing deterministic, and provides cross-platform MP4 output while the project runs from source.

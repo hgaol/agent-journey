@@ -70,6 +70,7 @@ When a session contains timestamps plus occasional untimed control records, Repl
 
 - **Package** exports lossless `.agentjourney` evidence. Confirm the warning: the package is unencrypted and may contain secrets.
 - **HTML** exports escaped, self-contained presentation using a CSS-compatible selected renderer. Executable third-party renderer code is never embedded.
+- **MP4** opens a local export dialog for Style Pack, 720p/1080p/1440p quality, 0.5×–16× playback speed, 30/60 fps, event/recorded/simulated streaming, and redaction. Video is silent H.264, simulated cadence is labeled, and temporary frames remain local and are deleted after encoding. A local Chromium/Chrome installation is required; set `AGENTJOURNEY_CHROME_EXECUTABLE` when it is installed at a nonstandard path.
 - Settings imports Journey Packages and labels their Interpretations external until locally reinterpreted.
 
 ## Archive operations

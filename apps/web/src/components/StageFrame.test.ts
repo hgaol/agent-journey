@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { StageDocument } from "@agentjourney/contracts";
-import { STAGE_SCRIPT, projectStageDocument } from "./StageFrame.js";
+import { STAGE_SCRIPT, projectStageDocument } from "@agentjourney/portability";
 
 function stage(): StageDocument {
   return {

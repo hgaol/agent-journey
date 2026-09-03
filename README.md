@@ -6,7 +6,7 @@ It passively scans approved history locations or imports selected native files. 
 
 ## Development
 
-Requirements: Node.js 22.19+ and pnpm 10+.
+Requirements: Node.js 22.19+ and pnpm 10+. Local MP4 export additionally requires Chromium or Google Chrome; the platform FFmpeg encoder is installed with the host dependencies.
 
 ```bash
 pnpm install
@@ -80,6 +80,7 @@ See [Plugin authoring](docs/plugins.md).
 - Deleting a Journey can retain a content-free Capture Exclusion to prevent surprise re-import.
 - `.agentjourney` packages are lossless, unencrypted, checksummed, data-only, and re-importable.
 - HTML Presentation Exports are escaped, redacted by default, self-contained, and contain no third-party executable code.
+- Replay Video Exports are locally rendered, silent H.264 MP4 files with selectable Style Pack, 720p/1080p/1440p quality, 0.5×–16× speed, 30/60 fps, streaming mode, and redaction.
 
 See [Archive and package format](docs/archive-format.md).
 
@@ -95,7 +96,7 @@ packages/plugin-sdk          adapter/renderer interfaces and conformance tools
 packages/plugin-runtime      package registry, QuickJS adapter sandbox
 packages/builtin-adapters    Claude, Codex, Pi, and Copilot adapters
 packages/builtin-renderers   neutral and source-native Style Packs
-packages/portability         sanitized HTML presentation renderer
+packages/portability         shared interactive Stage and sanitized presentation rendering
 packages/test-fixtures       sanitized native-history fixtures
 ```
 

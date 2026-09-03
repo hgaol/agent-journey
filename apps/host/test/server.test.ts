@@ -30,7 +30,27 @@ describe("loopback host", () => {
     const coordinator = new CaptureCoordinator(builtInAdapters, archive, settings, events);
     const pluginRegistry = new PluginRegistry(dataRoot);
     await pluginRegistry.load();
-    const app = await createServer({ archive, settings, auth, events, coordinator, pluginRegistry, logger: false });
+    let exportedQuality: string | undefined;
+    const app = await createServer({
+      archive,
+      settings,
+      auth,
+      events,
+      coordinator,
+      pluginRegistry,
+      videoExporter: {
+        async exportReplay(input) {
+          exportedQuality = input.options.quality;
+          return {
+            bytes: new Uint8Array([0, 0, 0, 16, 102, 116, 121, 112]),
+            fileName: "fixture.mp4",
+            frameCount: 2,
+            durationMs: 1000
+          };
+        }
+      },
+      logger: false
+    });
 
     const denied = await app.inject({ method: "GET", url: "/api/v1/journeys", headers: { host: "localhost" } });
     expect(denied.statusCode).toBe(401);
@@ -93,6 +113,24 @@ describe("loopback host", () => {
     const detail = await app.inject({ method: "GET", url: `/api/v1/journeys/${result.journeyId}`, headers });
     expect(detail.statusCode).toBe(200);
     expect(detail.json().stage.activities.length).toBeGreaterThan(0);
+
+    const video = await app.inject({
+      method: "POST",
+      url: `/api/v1/journeys/${result.journeyId}/export/mp4`,
+      headers,
+      payload: {
+        rendererId: "builtin.pi",
+        quality: "720p",
+        speed: 2,
+        fps: 30,
+        streamMode: "events",
+        reveal: false
+      }
+    });
+    expect(video.statusCode).toBe(200);
+    expect(video.headers["content-type"]).toContain("video/mp4");
+    expect(video.headers["content-disposition"]).toContain("fixture.mp4");
+    expect(exportedQuality).toBe("720p");
 
     const search = await app.inject({ method: "GET", url: "/api/v1/search?q=greeting&sourceAgent=pi", headers });
     expect(search.statusCode).toBe(200);
