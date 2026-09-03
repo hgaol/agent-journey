@@ -26,10 +26,26 @@ const QUALITY = {
   "1440p": { width: 2560, height: 1440, crf: 18, preset: "slow" }
 } as const;
 
+export type ReplayVideoProgressPhase =
+  | "preparing"
+  | "rendering"
+  | "encoding"
+  | "finalizing"
+  | "completed";
+
+export interface ReplayVideoProgress {
+  phase: ReplayVideoProgressPhase;
+  percent: number;
+  message: string;
+  completed?: number;
+  total?: number;
+}
+
 export interface ReplayVideoExportInput {
   stage: StageDocument;
   renderer: RendererPlugin;
   options: ReplayVideoExportOptionsDocument;
+  onProgress?: (progress: ReplayVideoProgress) => void;
 }
 
 export interface ReplayVideoExportResult {
@@ -49,6 +65,17 @@ export interface ReplayVideoFramePlan {
   durationMs: number;
 }
 
+function publishProgress(input: ReplayVideoExportInput, progress: ReplayVideoProgress): void {
+  try {
+    input.onProgress?.({
+      ...progress,
+      percent: Math.max(0, Math.min(100, Math.round(progress.percent)))
+    });
+  } catch {
+    // Progress reporting must never abort a local export.
+  }
+}
+
 export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOptionsDocument {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Video export options are required");
   const input = value as Record<string, unknown>;
@@ -66,6 +93,7 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
   if (typeof input.reveal !== "boolean") throw new Error("Video redaction selection is required");
   return {
     rendererId: input.rendererId,
+    ...(typeof input.exportId === "string" && input.exportId ? { exportId: input.exportId } : {}),
     browser: browser as NonNullable<ReplayVideoExportOptionsDocument["browser"]>,
     quality: quality as ReplayVideoExportOptionsDocument["quality"],
     speed: speed as ReplayVideoExportOptionsDocument["speed"],
@@ -233,13 +261,31 @@ function concatPath(filePath: string): string {
   return filePath.replaceAll("\\", "/").replaceAll("'", "'\\''");
 }
 
-async function runFfmpeg(args: string[]): Promise<void> {
+async function runFfmpeg(
+  args: string[],
+  durationMs: number,
+  onProgress: (percent: number) => void
+): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const child = spawn(ffmpegInstaller.path, args, { stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
     let stderr = "";
+    let pending = "";
     child.stderr.setEncoding("utf8");
     child.stderr.on("data", (chunk: string) => {
       stderr = `${stderr}${chunk}`.slice(-16_000);
+      pending += chunk;
+      const lines = pending.split(/\r?\n/u);
+      pending = lines.pop() ?? "";
+      for (const line of lines) {
+        const [key, rawValue] = line.split("=", 2);
+        if ((key === "out_time_ms" || key === "out_time_us") && rawValue) {
+          const encodedMicroseconds = Number(rawValue);
+          if (Number.isFinite(encodedMicroseconds) && durationMs > 0) {
+            onProgress(Math.min(98, 82 + (encodedMicroseconds / (durationMs * 1_000)) * 16));
+          }
+        }
+        if (key === "progress" && rawValue === "end") onProgress(98);
+      }
     });
     child.once("error", reject);
     child.once("close", (code) => {
@@ -259,9 +305,17 @@ export class LocalReplayVideoExporter implements ReplayVideoExporter {
     let temporaryDirectory: string | undefined;
     let browser: Browser | undefined;
     try {
+      publishProgress(input, { phase: "preparing", percent: 1, message: "Planning Replay frames" });
       temporaryDirectory = await mkdtemp(path.join(os.tmpdir(), "agentjourney-video-"));
       const plan = planReplayVideo(input.stage, input.options);
       const quality = QUALITY[input.options.quality];
+      publishProgress(input, {
+        phase: "preparing",
+        percent: 4,
+        message: `Launching ${input.options.browser ?? "auto"} rendering engine`,
+        completed: 0,
+        total: plan.frames.length
+      });
       const launched = await launchBrowser(input.options.browser ?? "auto");
       browser = launched.browser;
       const context = await browser.newContext({
@@ -278,11 +332,26 @@ export class LocalReplayVideoExporter implements ReplayVideoExporter {
       );
       await page.addStyleTag({ content: "*{animation:none!important;transition:none!important}html{scroll-behavior:auto!important}" });
       const imagePaths: string[] = [];
+      publishProgress(input, {
+        phase: "rendering",
+        percent: 10,
+        message: `Rendering frame 0 of ${plan.frames.length}`,
+        completed: 0,
+        total: plan.frames.length
+      });
       for (const [index, frame] of plan.frames.entries()) {
         await renderStageFrame(page, stageAtFrame(input.stage, frame, input.options.streamMode));
         const imagePath = path.join(temporaryDirectory, `frame-${String(index).padStart(5, "0")}.png`);
         await page.screenshot({ path: imagePath, type: "png" });
         imagePaths.push(imagePath);
+        const completed = index + 1;
+        publishProgress(input, {
+          phase: "rendering",
+          percent: 10 + (completed / plan.frames.length) * 70,
+          message: `Rendering frame ${completed} of ${plan.frames.length}`,
+          completed,
+          total: plan.frames.length
+        });
       }
       const listPath = path.join(temporaryDirectory, "frames.txt");
       const list = imagePaths.flatMap((imagePath, index) => [
@@ -292,15 +361,23 @@ export class LocalReplayVideoExporter implements ReplayVideoExporter {
       list.push(`file '${concatPath(imagePaths.at(-1)!)}'`);
       await writeFile(listPath, `${list.join("\n")}\n`, "utf8");
       const outputPath = path.join(temporaryDirectory, "replay.mp4");
+      publishProgress(input, { phase: "encoding", percent: 82, message: "Encoding H.264 MP4" });
       await runFfmpeg([
         "-hide_banner", "-loglevel", "error", "-y",
+        "-progress", "pipe:2", "-nostats",
         "-f", "concat", "-safe", "0", "-i", listPath,
         "-vf", `fps=${input.options.fps},format=yuv420p`,
         "-an", "-c:v", "libx264", "-preset", quality.preset,
         "-crf", String(quality.crf), "-movflags", "+faststart",
         outputPath
-      ]);
+      ], plan.durationMs, (percent) => publishProgress(input, {
+        phase: "encoding",
+        percent,
+        message: "Encoding H.264 MP4"
+      }));
+      publishProgress(input, { phase: "finalizing", percent: 99, message: "Finalizing MP4 download" });
       const bytes = await readFile(outputPath);
+      publishProgress(input, { phase: "completed", percent: 100, message: "MP4 export complete" });
       return {
         bytes,
         fileName: `${input.stage.journeyId.slice(0, 12)}-${input.options.quality}-${input.options.speed}x.mp4`,

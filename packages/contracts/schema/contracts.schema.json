@@ -619,6 +619,7 @@
       "required": ["rendererId", "quality", "speed", "fps", "streamMode", "reveal"],
       "properties": {
         "rendererId": { "type": "string", "minLength": 1 },
+        "exportId": { "type": "string", "minLength": 1 },
         "browser": { "type": "string", "enum": ["auto", "chromium", "chrome", "edge", "webkit"] },
         "quality": { "type": "string", "enum": ["720p", "1080p", "1440p"] },
         "speed": { "type": "number", "enum": [0.5, 1, 2, 4, 8, 16] },

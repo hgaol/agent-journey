@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyInstance } from "fastify";
 import { unzipSync } from "fflate";
 import { compareInterpretations } from "@agentjourney/activity-graph";
@@ -347,8 +348,13 @@ export async function createServer(dependencies: ServerDependencies): Promise<Fa
   app.post("/api/v1/journeys/:journeyId/export/mp4", async (request, reply) => {
     if (!dependencies.videoExporter) return reply.code(503).send({ error: "video_export_unavailable" });
     const { journeyId } = request.params as { journeyId: string };
+    const requestedExportId = request.body && typeof request.body === "object" && !Array.isArray(request.body)
+      ? (request.body as Record<string, unknown>).exportId
+      : undefined;
+    let exportId = typeof requestedExportId === "string" && requestedExportId ? requestedExportId : randomUUID();
     try {
       const options = validateReplayVideoOptions(request.body);
+      exportId = options.exportId ?? exportId;
       const journey = await dependencies.archive.getJourney(journeyId, {
         ...(options.revisionId ? { revisionId: options.revisionId } : {}),
         ...(options.interpretationId ? { interpretationId: options.interpretationId } : {}),
@@ -361,13 +367,37 @@ export async function createServer(dependencies: ServerDependencies): Promise<Fa
       const video = await dependencies.videoExporter.exportReplay({
         stage: journey.stage,
         renderer,
-        options
+        options,
+        onProgress(progress) {
+          dependencies.events.publish({
+            type: "video-export-progress",
+            at: new Date().toISOString(),
+            data: {
+              exportId,
+              journeyId,
+              status: progress.phase === "completed" ? "completed" : "running",
+              ...progress
+            }
+          });
+        }
       });
       reply.header("content-disposition", `attachment; filename=\"${video.fileName}\"`);
       reply.header("content-length", String(video.bytes.byteLength));
       reply.type("video/mp4");
       return reply.send(Buffer.from(video.bytes));
     } catch (error) {
+      dependencies.events.publish({
+        type: "video-export-progress",
+        at: new Date().toISOString(),
+        data: {
+          exportId,
+          journeyId,
+          status: "failed",
+          phase: "failed",
+          percent: 0,
+          message: errorMessage(error)
+        }
+      });
       return reply.code(400).send({ error: "video_export_failed", message: errorMessage(error) });
     }
   });

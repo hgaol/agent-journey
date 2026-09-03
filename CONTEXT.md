@@ -341,7 +341,7 @@ A derived, non-authoritative presentation of selected Journey content using a ch
 _Avoid_: Source Evidence, Journey Package
 
 **Replay Video Export**:
-A local MP4 Presentation Export produced from deterministic Replay frames using a selected Style Pack, local rendering engine, quality, 0.5×–16× speed, frame rate, streaming mode, and redaction policy. It contains no audio and is never Source Evidence or a terminal recording; simulated timing remains visibly labeled.
+A local MP4 Presentation Export produced from deterministic Replay frames using a selected Style Pack, local rendering engine, quality, 0.5×–16× speed, frame rate, streaming mode, and redaction policy. It contains no audio and is never Source Evidence or a terminal recording; simulated timing remains visibly labeled. Export preparation, frame rendering, encoding, and finalization expose local progress without changing the resulting presentation.
 _Avoid_: Terminal Fidelity, screen recording, evidence package
 
 **Retention Policy**:

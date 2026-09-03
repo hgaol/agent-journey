@@ -296,6 +296,7 @@ export interface CaptureCommitResultDocument {
 }
 export interface ReplayVideoExportOptionsDocument {
   rendererId: string;
+  exportId?: string;
   browser?: "auto" | "chromium" | "chrome" | "edge" | "webkit";
   quality: "720p" | "1080p" | "1440p";
   speed: 0.5 | 1 | 2 | 4 | 8 | 16;

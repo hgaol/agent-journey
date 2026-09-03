@@ -1,7 +1,7 @@
 import type { FastifyReply } from "fastify";
 
 export interface HostEvent {
-  type: "capture-started" | "capture-progress" | "capture-completed" | "capture-failed" | "archive-changed";
+  type: "capture-started" | "capture-progress" | "capture-completed" | "capture-failed" | "archive-changed" | "video-export-progress";
   at: string;
   data: Record<string, unknown>;
 }

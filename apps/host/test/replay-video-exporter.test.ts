@@ -97,14 +97,22 @@ describe("Replay video export", () => {
     expect(planReplayVideo(stage(false), { speed: 1, streamMode: "simulated" }).frames.length).toBeGreaterThan(1);
   });
 
-  it("encodes a playable MP4 from source-native Replay frames", async () => {
+  it("encodes a playable MP4 and reports rendering/encoding progress", async () => {
+    const progress: Array<{ phase: string; percent: number }> = [];
     const result = await new LocalReplayVideoExporter().exportReplay({
       stage: stage(),
       renderer: rendererForSourceAgent("pi"),
-      options
+      options,
+      onProgress(update) {
+        progress.push(update);
+      }
     });
     expect(result.frameCount).toBe(2);
     expect(result.bytes.byteLength).toBeGreaterThan(1_000);
     expect(Buffer.from(result.bytes).subarray(4, 8).toString("ascii")).toBe("ftyp");
+    expect(progress[0]).toMatchObject({ phase: "preparing", percent: 1 });
+    expect(progress.some(({ phase }) => phase === "rendering")).toBe(true);
+    expect(progress.some(({ phase, percent }) => phase === "encoding" && percent > 82)).toBe(true);
+    expect(progress.at(-1)).toMatchObject({ phase: "completed", percent: 100 });
   }, 60_000);
 });

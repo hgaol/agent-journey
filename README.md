@@ -80,7 +80,7 @@ See [Plugin authoring](docs/plugins.md).
 - Deleting a Journey can retain a content-free Capture Exclusion to prevent surprise re-import.
 - `.agentjourney` packages are lossless, unencrypted, checksummed, data-only, and re-importable.
 - HTML Presentation Exports are escaped, redacted by default, self-contained, and contain no third-party executable code.
-- Replay Video Exports are locally rendered, silent H.264 MP4 files with selectable Style Pack, rendering engine, 720p/1080p/1440p quality, 0.5×–16× speed, 30/60 fps, streaming mode, and redaction.
+- Replay Video Exports are locally rendered, silent H.264 MP4 files with selectable Style Pack, rendering engine, 720p/1080p/1440p quality, 0.5×–16× speed, 30/60 fps, streaming mode, and redaction, with live phase, percentage, and rendered-frame progress.
 
 See [Archive and package format](docs/archive-format.md).
 

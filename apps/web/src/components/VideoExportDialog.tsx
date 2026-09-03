@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReplayVideoExportOptionsDocument } from "@agentjourney/contracts";
 
 export interface VideoRendererChoice {
@@ -18,6 +18,7 @@ export function VideoExportDialog(props: {
   onClose: () => void;
   onExport: (options: ReplayVideoExportOptionsDocument) => Promise<void>;
 }): React.ReactNode {
+  const [exportId] = useState(() => globalThis.crypto?.randomUUID?.() ?? `video-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   const [browser, setBrowser] = useState<NonNullable<ReplayVideoExportOptionsDocument["browser"]>>("auto");
   const [quality, setQuality] = useState<ReplayVideoExportOptionsDocument["quality"]>("1080p");
   const [speed, setSpeed] = useState<ReplayVideoExportOptionsDocument["speed"]>(1);
@@ -29,13 +30,47 @@ export function VideoExportDialog(props: {
   const [reveal, setReveal] = useState(props.reveal);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string>();
+  const [progress, setProgress] = useState({ percent: 0, message: "Waiting to start", completed: 0, total: 0 });
+
+  useEffect(() => {
+    const events = new EventSource("/api/v1/events", { withCredentials: true });
+    const receiveProgress = (event: MessageEvent<string>): void => {
+      try {
+        const hostEvent = JSON.parse(event.data) as {
+          data?: {
+            exportId?: string;
+            percent?: number;
+            message?: string;
+            completed?: number;
+            total?: number;
+            status?: string;
+          };
+        };
+        const update = hostEvent.data;
+        if (!update || update.exportId !== exportId) return;
+        setProgress((current) => ({
+          percent: typeof update.percent === "number" ? update.percent : current.percent,
+          message: update.message ?? current.message,
+          completed: typeof update.completed === "number" ? update.completed : current.completed,
+          total: typeof update.total === "number" ? update.total : current.total
+        }));
+        if (update.status === "failed" && update.message) setError(update.message);
+      } catch {
+        // The POST request still reports export errors if progress events are unavailable.
+      }
+    };
+    events.addEventListener("video-export-progress", receiveProgress as EventListener);
+    return () => events.close();
+  }, [exportId]);
 
   const submit = async (): Promise<void> => {
     setExporting(true);
     setError(undefined);
+    setProgress({ percent: 0, message: "Starting local MP4 export", completed: 0, total: 0 });
     try {
       await props.onExport({
         rendererId,
+        exportId,
         browser,
         quality,
         speed,
@@ -128,7 +163,23 @@ export function VideoExportDialog(props: {
         </label>
         {reveal && <p className="video-export-warning">The MP4 may contain credentials or private source code.</p>}
         {error && <p className="video-export-error">{error}</p>}
-        {exporting && <p className="video-export-progress">Rendering Replay frames and encoding H.264 locally…</p>}
+        {exporting && (
+          <div
+            className="video-export-progress"
+            role="progressbar"
+            aria-label="MP4 export progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress.percent}
+          >
+            <div>
+              <span>{progress.message}</span>
+              <strong>{progress.percent}%</strong>
+            </div>
+            <i><span style={{ width: `${progress.percent}%` }} /></i>
+            {progress.total > 0 && <small>{progress.completed}/{progress.total} Replay frames</small>}
+          </div>
+        )}
         <footer>
           <button className="secondary-button" onClick={props.onClose} disabled={exporting}>Cancel</button>
           <button className="primary-button" onClick={() => void submit()} disabled={exporting || !rendererId}>

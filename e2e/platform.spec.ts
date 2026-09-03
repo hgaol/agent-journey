@@ -319,6 +319,10 @@ test("exports a configurable source-native Replay as MP4", async ({ page }) => {
   await dialog.getByLabel("Replay content").selectOption("events");
   const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
   await dialog.getByRole("button", { name: "Export MP4" }).click();
+  const progress = dialog.getByRole("progressbar", { name: "MP4 export progress" });
+  await expect(progress).toBeVisible();
+  await expect.poll(async () => Number(await progress.getAttribute("aria-valuenow"))).toBeGreaterThan(0);
+  await expect(progress).toContainText(/Rendering frame|Encoding H\.264|Finalizing/u);
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/720p-8x\.mp4$/u);
   const filePath = await download.path();
