@@ -283,13 +283,17 @@ test("simulates prompt typing in the Copilot composer before submission", async 
   await promptPlayback.selectOption("instant");
   await promptPlayback.selectOption("simulated");
   await expect(page.locator(".terminal-pane-header")).toContainText("simulated prompt typing");
+  const typingSpeed = page.getByLabel("Typing speed");
+  await expect(typingSpeed).toBeVisible();
+  await typingSpeed.selectOption("0.5");
+  await expect(typingSpeed).toHaveValue("0.5");
   const draft = stage.locator(".stage-native-composer-draft");
   await expect(draft).toHaveText(/.+/u, { timeout: 5_000 });
   await expect(stage.locator(".stage-native-composer")).toHaveCSS("background-color", "rgb(12, 12, 12)");
   const play = page.locator(".terminal-play");
   await play.click();
   await expect(stage.locator('.activity[data-kind="human-input"]')).toHaveCount(0);
-  await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED prompt typing");
+  await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED prompt typing 0.5×");
   await play.click();
   await expect(stage.locator('.activity[data-kind="human-input"]').getByText("Read the greeting file.", { exact: true })).toBeVisible({ timeout: 5_000 });
   await expect(draft).toHaveText("");
@@ -325,7 +329,7 @@ test("offers clearly labeled simulated TUI streaming when recorded chunks are un
   await expect(page.locator(".terminal-transport > small")).toContainText("SIMULATED cadence", {
     timeout: 5000
   });
-  await expect(page.locator(".terminal-transport > small")).toContainText("cadence 8×");
+  await expect(page.locator(".terminal-transport > small")).toContainText("stream 8×");
 });
 
 test("exports a configurable source-native Replay as MP4", async ({ page }) => {
@@ -345,6 +349,8 @@ test("exports a configurable source-native Replay as MP4", async ({ page }) => {
   await dialog.getByLabel("Frame rate").selectOption("30");
   await dialog.getByLabel("Replay content").selectOption("events");
   await dialog.getByLabel("Simulate user typing before prompt submission").check();
+  await dialog.getByLabel("Typing speed").selectOption("2");
+  await expect(dialog.getByLabel("Typing speed")).toHaveValue("2");
   const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
   await dialog.getByRole("button", { name: "Export MP4" }).click();
   const progress = dialog.getByRole("progressbar", { name: "MP4 export progress" });

@@ -244,9 +244,13 @@ _Avoid_: Recorded Streaming, faithful cadence
 A clearly labeled presentation in which final Human Input text is revealed as a draft in the source-native composer, then moved into the transcript as submitted. It does not claim captured keystrokes and never sends the prompt to a Source Agent.
 _Avoid_: Recorded input, Agent Control, evidenced typing cadence
 
+**Typing Speed**:
+A user-selected 0.5×–4× multiplier applied only to Simulated Prompt Typing. It remains independent from response Streaming Speed and inter-Activity Timeline Speed.
+_Avoid_: Recorded keystroke rate, Streaming Speed
+
 **Streaming Speed**:
-A user-selected multiplier applied to chunk transitions within Recorded or Simulated Streaming and to Simulated Prompt Typing. It does not alter the timestamp-based intervals between separate Activities.
-_Avoid_: Timeline speed, source timing
+A user-selected multiplier applied only to response chunk transitions within Recorded or Simulated Streaming. It does not alter prompt typing or timestamp-based intervals between separate Activities.
+_Avoid_: Typing Speed, Timeline speed, source timing
 
 **Reasoning**:
 Deliberation or a reasoning summary attributed as such by Source Evidence. AgentJourney does not infer Reasoning from ordinary Agent Output.

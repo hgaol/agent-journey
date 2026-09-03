@@ -125,13 +125,22 @@ describe("Activity Graph", () => {
       { streamMode: "events", simulateHumanInput: true }
     );
     expect(canAutoPlayReplay(promptOnly, "events")).toBe(true);
-    expect(replayFrameDelay(promptOnly[0]!, promptOnly[1]!, {
+    const normalTypingDelay = replayFrameDelay(promptOnly[0]!, promptOnly[1]!, {
       timelineSpeed: 16,
-      streamingSpeed: 16
-    })).toBeGreaterThanOrEqual(30);
+      streamingSpeed: 16,
+      typingSpeed: 1
+    });
+    const fastTypingDelay = replayFrameDelay(promptOnly[0]!, promptOnly[1]!, {
+      timelineSpeed: 16,
+      streamingSpeed: 16,
+      typingSpeed: 4
+    });
+    expect(normalTypingDelay).toBe(45);
+    expect(fastTypingDelay).toBe(15);
     expect(replayFrameDelay(promptOnly[2]!, promptOnly[3]!, {
       timelineSpeed: 16,
-      streamingSpeed: 16
+      streamingSpeed: 16,
+      typingSpeed: 4
     })).toBeGreaterThanOrEqual(180);
   });
 

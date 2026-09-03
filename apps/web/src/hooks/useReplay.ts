@@ -22,6 +22,7 @@ export function useReplay(
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [streamingSpeed, setStreamingSpeed] = useState(1);
+  const [typingSpeed, setTypingSpeed] = useState(1);
   const [holdingFirstFrame, setHoldingFirstFrame] = useState(false);
   const [remainingMs, setRemainingMs] = useState(0);
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
@@ -43,8 +44,9 @@ export function useReplay(
   const plannedRemainingMs = useMemo(() => replayRemainingDuration(frames, index, {
     timelineSpeed: speed,
     streamingSpeed,
+    typingSpeed,
     ...(holdingFirstFrame && index === 0 ? { firstFrameMinimumMs: 400 } : {})
-  }), [frames, holdingFirstFrame, index, speed, streamingSpeed]);
+  }), [frames, holdingFirstFrame, index, speed, streamingSpeed, typingSpeed]);
 
   useEffect(() => {
     setRemainingMs(plannedRemainingMs);
@@ -65,7 +67,8 @@ export function useReplay(
     const next = frames[index + 1];
     const replayGap = replayFrameDelay(current!, next!, {
       timelineSpeed: speed,
-      streamingSpeed
+      streamingSpeed,
+      typingSpeed
     });
     const gap = holdingFirstFrame && index === 0 ? Math.max(400, replayGap) : replayGap;
     const timer = window.setTimeout(() => {
@@ -73,7 +76,7 @@ export function useReplay(
       setIndex((value) => value + 1);
     }, gap);
     return () => window.clearTimeout(timer);
-  }, [canAutoPlay, frames, holdingFirstFrame, index, playing, speed, streamingSpeed]);
+  }, [canAutoPlay, frames, holdingFirstFrame, index, playing, speed, streamingSpeed, typingSpeed]);
 
   return {
     frames,
@@ -85,6 +88,8 @@ export function useReplay(
     setSpeed,
     streamingSpeed,
     setStreamingSpeed,
+    typingSpeed,
+    setTypingSpeed,
     current: frames[index],
     remainingMs,
     canAutoPlay,

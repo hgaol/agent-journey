@@ -68,12 +68,13 @@ const options = validateReplayVideoOptions({
 
 describe("Replay video export", () => {
   it("validates bounded quality, speed, frame-rate, and streaming options", () => {
-    expect(options).toMatchObject({ browser: "auto", quality: "720p", speed: 1, fps: 30, streamMode: "events", promptTyping: false });
+    expect(options).toMatchObject({ browser: "auto", quality: "720p", speed: 1, fps: 30, streamMode: "events", promptTyping: false, typingSpeed: 1 });
     const { promptTyping: _promptTyping, ...withoutPromptTyping } = options;
     expect(validateReplayVideoOptions(withoutPromptTyping).promptTyping).toBe(true);
     expect(() => validateReplayVideoOptions({ ...options, speed: 3 })).toThrow(/speed/u);
     expect(() => validateReplayVideoOptions({ ...options, quality: "4k" })).toThrow(/quality/u);
     expect(() => validateReplayVideoOptions({ ...options, promptTyping: "yes" })).toThrow(/Prompt typing/u);
+    expect(() => validateReplayVideoOptions({ ...options, typingSpeed: 3 })).toThrow(/typing speed/u);
   });
 
   it("falls back through Chrome and Edge, with optional Safari-compatible WebKit", () => {
@@ -98,10 +99,13 @@ describe("Replay video export", () => {
 
   it("includes simulated prompt drafts only when explicitly selected", () => {
     const instant = planReplayVideo(stage(), { speed: 1, streamMode: "events", promptTyping: false });
-    const typed = planReplayVideo(stage(), { speed: 1, streamMode: "events", promptTyping: true });
+    const typed = planReplayVideo(stage(), { speed: 1, streamMode: "events", promptTyping: true, typingSpeed: 1 });
+    const slow = planReplayVideo(stage(), { speed: 1, streamMode: "events", promptTyping: true, typingSpeed: 0.5 });
+    const fast = planReplayVideo(stage(), { speed: 1, streamMode: "events", promptTyping: true, typingSpeed: 4 });
     expect(instant.frames.some(({ simulatedInputTextLength }) => simulatedInputTextLength !== undefined)).toBe(false);
     expect(typed.frames.some(({ simulatedInputTextLength }) => simulatedInputTextLength !== undefined)).toBe(true);
     expect(typed.frames.some(({ inputSubmitted }) => inputSubmitted)).toBe(true);
+    expect(slow.durationMs).toBeGreaterThan(fast.durationMs);
   });
 
   it("requires an explicit simulated stream for fully untimed histories", () => {

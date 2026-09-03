@@ -27,6 +27,7 @@ export function VideoExportDialog(props: {
     props.initialStreamMode
   );
   const [promptTyping, setPromptTyping] = useState(true);
+  const [typingSpeed, setTypingSpeed] = useState<NonNullable<ReplayVideoExportOptionsDocument["typingSpeed"]>>(1);
   const [rendererId, setRendererId] = useState(props.rendererId);
   const [reveal, setReveal] = useState(props.reveal);
   const [exporting, setExporting] = useState(false);
@@ -78,6 +79,7 @@ export function VideoExportDialog(props: {
         fps,
         streamMode,
         promptTyping,
+        typingSpeed,
         reveal,
         revisionId: props.revisionId,
         interpretationId: props.interpretationId
@@ -164,6 +166,17 @@ export function VideoExportDialog(props: {
           Simulate user typing before prompt submission
         </label>
         <small className="video-export-field-note">Typing is presentation-only and permanently labeled as simulated.</small>
+        {promptTyping && (
+          <label>
+            Typing speed
+            <select value={typingSpeed} onChange={(event) => setTypingSpeed(Number(event.target.value) as NonNullable<ReplayVideoExportOptionsDocument["typingSpeed"]>)} disabled={exporting}>
+              <option value={0.5}>Slow · 0.5×</option>
+              <option value={1}>Normal · 1×</option>
+              <option value={2}>Fast · 2×</option>
+              <option value={4}>Very fast · 4×</option>
+            </select>
+          </label>
+        )}
         <label className="checkbox-label video-export-redaction">
           <input type="checkbox" checked={reveal} onChange={(event) => setReveal(event.target.checked)} disabled={exporting} />
           Export unredacted content

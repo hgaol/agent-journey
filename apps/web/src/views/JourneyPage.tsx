@@ -646,18 +646,30 @@ export function JourneyPage(): React.ReactNode {
             <option value="instant">prompt · instant</option>
             <option value="simulated">prompt · simulated typing</option>
           </select>
-          {(streamMode !== "events" || simulatePromptTyping) && (
+          {simulatePromptTyping && (
+            <select
+              aria-label="Typing speed"
+              value={replay.typingSpeed}
+              onChange={(event) => replay.setTypingSpeed(Number(event.target.value))}
+            >
+              <option value={0.5}>typing · slow</option>
+              <option value={1}>typing · normal</option>
+              <option value={2}>typing · fast</option>
+              <option value={4}>typing · very fast</option>
+            </select>
+          )}
+          {streamMode !== "events" && (
             <select
               aria-label="Streaming speed"
               value={replay.streamingSpeed}
               onChange={(event) => replay.setStreamingSpeed(Number(event.target.value))}
             >
-              <option value={0.5}>cadence 0.5×</option>
-              <option value={1}>cadence 1×</option>
-              <option value={2}>cadence 2×</option>
-              <option value={4}>cadence 4×</option>
-              <option value={8}>cadence 8×</option>
-              <option value={16}>cadence 16×</option>
+              <option value={0.5}>stream 0.5×</option>
+              <option value={1}>stream 1×</option>
+              <option value={2}>stream 2×</option>
+              <option value={4}>stream 4×</option>
+              <option value={8}>stream 8×</option>
+              <option value={16}>stream 16×</option>
             </select>
           )}
           <select
@@ -683,8 +695,8 @@ export function JourneyPage(): React.ReactNode {
               : transportFrame?.simulatedTextLength !== undefined
                 ? ` · ${transportFrame.simulatedTextLength} characters`
                 : ""}
-            {streamMode !== "events" || simulatePromptTyping ? ` · cadence ${replay.streamingSpeed}×` : ""}
-            {simulatePromptTyping ? " · SIMULATED prompt typing" : ""}
+            {streamMode !== "events" ? ` · stream ${replay.streamingSpeed}×` : ""}
+            {simulatePromptTyping ? ` · SIMULATED prompt typing ${replay.typingSpeed}×` : ""}
             {transportFrame?.idleGapCompressed ? " · idle compressed" : ""}
           </small>
           <div className="terminal-native-context">

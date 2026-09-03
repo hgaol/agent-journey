@@ -91,6 +91,8 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
   if (fps !== 30 && fps !== 60) throw new Error("Unsupported frame rate");
   if (!(["events", "recorded", "simulated"] as const).includes(streamMode as never)) throw new Error("Unsupported streaming mode");
   if (input.promptTyping !== undefined && typeof input.promptTyping !== "boolean") throw new Error("Prompt typing selection must be boolean");
+  const typingSpeed = input.typingSpeed ?? 1;
+  if (!([0.5, 1, 2, 4] as const).includes(typingSpeed as never)) throw new Error("Unsupported typing speed");
   if (typeof input.reveal !== "boolean") throw new Error("Video redaction selection is required");
   return {
     rendererId: input.rendererId,
@@ -101,6 +103,7 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
     fps,
     streamMode: streamMode as ReplayVideoExportOptionsDocument["streamMode"],
     promptTyping: input.promptTyping !== false,
+    typingSpeed: typingSpeed as NonNullable<ReplayVideoExportOptionsDocument["typingSpeed"]>,
     reveal: input.reveal,
     ...(typeof input.revisionId === "string" ? { revisionId: input.revisionId } : {}),
     ...(typeof input.interpretationId === "string" ? { interpretationId: input.interpretationId } : {})
@@ -109,7 +112,7 @@ export function validateReplayVideoOptions(value: unknown): ReplayVideoExportOpt
 
 export function planReplayVideo(
   stage: StageDocument,
-  options: Pick<ReplayVideoExportOptionsDocument, "speed" | "streamMode" | "promptTyping">
+  options: Pick<ReplayVideoExportOptionsDocument, "speed" | "streamMode" | "promptTyping" | "typingSpeed">
 ): ReplayVideoFramePlan {
   const frames = deriveReplayFrames(stage.activities, {
     streamMode: options.streamMode,
@@ -127,7 +130,8 @@ export function planReplayVideo(
     if (!next) return Math.max(250, 1_200 / options.speed);
     return replayFrameDelay(frame, next, {
       timelineSpeed: options.speed,
-      streamingSpeed: options.speed
+      streamingSpeed: options.speed,
+      typingSpeed: options.typingSpeed ?? 1
     });
   });
   const durationMs = durationsMs.reduce((total, duration) => total + duration, 0);
@@ -252,7 +256,7 @@ async function addExportBadge(
     badge.textContent = `${label} · ${redaction}`;
     document.body.append(badge);
   }, {
-    label: `${rendererName.toUpperCase()} · ${options.quality.toUpperCase()} · ${options.fps} FPS · ${mode}${options.promptTyping ? " · SIMULATED PROMPT TYPING" : ""} · ${options.speed}×`,
+    label: `${rendererName.toUpperCase()} · ${options.quality.toUpperCase()} · ${options.fps} FPS · ${mode}${options.promptTyping ? ` · SIMULATED PROMPT TYPING ${options.typingSpeed ?? 1}×` : ""} · ${options.speed}×`,
     redaction: options.reveal ? "UNREDACTED" : "REDACTED"
   });
   await page.addStyleTag({ content: "#agentjourney-video-badge{position:fixed;z-index:2147483647;top:10px;right:10px;padding:5px 7px;border:1px solid #ffffff2b;border-radius:3px;background:#090b0dcc;color:#d4d4d4;font:10px ui-monospace,monospace;letter-spacing:.06em}" });

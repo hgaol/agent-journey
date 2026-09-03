@@ -626,6 +626,7 @@
         "fps": { "type": "integer", "enum": [30, 60] },
         "streamMode": { "type": "string", "enum": ["events", "recorded", "simulated"] },
         "promptTyping": { "type": "boolean" },
+        "typingSpeed": { "type": "number", "enum": [0.5, 1, 2, 4] },
         "reveal": { "type": "boolean" },
         "revisionId": { "type": "string" },
         "interpretationId": { "type": "string" }

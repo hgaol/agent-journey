@@ -324,6 +324,7 @@ export function deriveReplayFrames(
 export interface ReplayDelayOptions {
   timelineSpeed: number;
   streamingSpeed: number;
+  typingSpeed?: number;
   maximumDelayMs?: number;
 }
 
@@ -336,14 +337,16 @@ export function replayFrameDelay(
     && (next.streamSource === "recorded" || next.streamSource === "simulated");
   const withinPromptTyping = withinContentStream
     && (next.simulatedInputTextLength !== undefined || next.inputSubmitted === true);
-  const selectedSpeed = withinContentStream
-    ? options.streamingSpeed
-    : options.timelineSpeed;
+  const selectedSpeed = withinPromptTyping
+    ? options.typingSpeed ?? options.streamingSpeed
+    : withinContentStream
+      ? options.streamingSpeed
+      : options.timelineSpeed;
   const speed = Number.isFinite(selectedSpeed) && selectedSpeed > 0 ? selectedSpeed : 1;
   const minimumDelay = next.inputSubmitted
     ? 180
     : withinPromptTyping
-      ? 30
+      ? 15
       : withinContentStream
         ? 4
         : next.timing === "source-order"

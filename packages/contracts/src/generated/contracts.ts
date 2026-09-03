@@ -307,6 +307,7 @@ export interface ReplayVideoExportOptionsDocument {
   fps: 30 | 60;
   streamMode: "events" | "recorded" | "simulated";
   promptTyping?: boolean;
+  typingSpeed?: 0.5 | 1 | 2 | 4;
   reveal: boolean;
   revisionId?: string;
   interpretationId?: string;
