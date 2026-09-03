@@ -65,7 +65,7 @@ Each Journey opens in a **Terminal Replay Debugger**: terminal-native transcript
 
 ## Renderers
 
-Every Journey defaults to the renderer associated with its Source Agent. The same Canonical Activity can be switched among neutral, Claude Code, Codex, Pi, Copilot, or locally installed renderers. Source-native styles reproduce terminal hierarchy, prompts, markers, density, and reasoning treatment rather than merely recoloring generic cards. The Claude Code, GitHub Copilot CLI, and Pi packs use screenshot-sampled palettes and source-shaped editor/footer chrome.
+Every Journey defaults to the renderer associated with its Source Agent. The same Canonical Activity can be switched among neutral, Claude Code, Codex, Pi, Copilot, or locally installed renderers. Source-native styles reproduce terminal hierarchy, prompts, markers, density, and reasoning treatment rather than merely recoloring generic cards. The Claude Code, Codex, GitHub Copilot CLI, and Pi packs use screenshot- and live-ANSI-calibrated palettes with source-shaped prompts, tools, editors, and footer chrome.
 
 Built-in renderers are Style Pack plugins rather than hardcoded page variants. Third-party JavaScript renderers execute in capability-free QuickJS and return a validated declarative tree; trusted code renders that tree inside an opaque-origin iframe with scoped plugin CSS. Plugins receive only the selected Stage Document—not Source Evidence or archive access.
 

@@ -42,6 +42,22 @@ describe("built-in source format coverage", () => {
     expect(canAutoPlayReplay(frames, "events")).toBe(true);
   });
 
+  it("uses Claude's generated title and classifies current cost-state records", async () => {
+    const source = new MemorySource({
+      "session.jsonl": [
+        JSON.stringify({ type: "user", sessionId: "current-claude", message: { role: "user", content: "<command-name>/effort</command-name>" } }),
+        JSON.stringify({ type: "ai-title", sessionId: "current-claude", aiTitle: "Refine renderer" }),
+        JSON.stringify({ type: "cost-state", sessionId: "current-claude", totalCostUsd: 0.12 })
+      ].join("\n")
+    });
+    const [candidate] = await claudeCodeAdapter.discover(source);
+    expect(candidate?.title).toBe("Refine renderer");
+    const interpretation = await claudeCodeAdapter.interpret(candidate!, source);
+    expect(interpretation.activities.some(({ kind, nativeName }) =>
+      kind === "usage-observation" && nativeName === "cost-state"
+    )).toBe(true);
+  });
+
   it("preserves Claude parent UUID relationships as causal links", async () => {
     const source = new MemorySource(await readTree(fixturePath("claude-code")));
     const [candidate] = await claudeCodeAdapter.discover(source);
@@ -76,6 +92,41 @@ describe("built-in source format coverage", () => {
     const interpretation = await piAdapter.interpret(candidate!, source);
     expect(interpretation.coverage.dispositions.map(({ disposition }) => disposition)).toEqual(["metadata", "malformed", "unclassified"]);
     expect(interpretation.activities.some(({ kind }) => kind === "unclassified")).toBe(true);
+  });
+
+  it("decodes JSON-encoded Codex tool arguments for native rendering", async () => {
+    const source = new MemorySource(await readTree(fixturePath("codex-cli")));
+    const [candidate] = await codexCliAdapter.discover(source);
+    const interpretation = await codexCliAdapter.interpret(candidate!, source);
+    const invocation = interpretation.activities.find(({ kind }) => kind === "tool-invocation");
+    expect(invocation?.payload).toEqual({ cmd: "pnpm test greeting" });
+    expect(interpretation.activities).toContainEqual(expect.objectContaining({
+      kind: "diagnostic",
+      nativeName: "turn_aborted",
+      text: "Conversation interrupted"
+    }));
+    expect(interpretation.activities).toContainEqual(expect.objectContaining({
+      kind: "context-injection",
+      text: expect.stringContaining("<turn_aborted>")
+    }));
+  });
+
+  it("projects current Codex web-search records as one native tool row", async () => {
+    const source = new MemorySource({
+      "rollout.jsonl": [
+        JSON.stringify({ type: "session_meta", timestamp: "2026-01-01T00:00:00Z", payload: { id: "web-search", cwd: "/workspace" } }),
+        JSON.stringify({ type: "event_msg", timestamp: "2026-01-01T00:00:01Z", payload: { type: "web_search_end", call_id: "call-1", query: "Codex docs", action: { type: "search", query: "Codex docs" } } }),
+        JSON.stringify({ type: "response_item", timestamp: "2026-01-01T00:00:02Z", payload: { type: "web_search_call", status: "completed", action: { type: "search", query: "Codex docs" } } })
+      ].join("\n")
+    });
+    const [candidate] = await codexCliAdapter.discover(source);
+    const interpretation = await codexCliAdapter.interpret(candidate!, source);
+    const searches = interpretation.activities.filter(({ nativeName }) => nativeName === "web_search");
+    expect(searches).toHaveLength(1);
+    expect(searches[0]?.payload).toEqual({ type: "search", query: "Codex docs" });
+    expect(interpretation.coverage.dispositions.some(({ detail, disposition }) =>
+      disposition === "transport" && detail?.includes("web_search_end")
+    )).toBe(true);
   });
 
   it("supports legacy Codex response-item-only conversations without mislabeling injected context", async () => {

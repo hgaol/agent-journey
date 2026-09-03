@@ -1,5 +1,6 @@
 {"timestamp":"2026-01-01T10:00:00.000Z","type":"session_meta","payload":{"id":"22222222-2222-4222-8222-222222222222","timestamp":"2026-01-01T10:00:00.000Z","cwd":"/workspace/acme","cli_version":"0.100.0","model_provider":"openai","git":{"branch":"main"}}}
 {"timestamp":"2026-01-01T10:00:01.000Z","type":"event_msg","payload":{"type":"task_started","turn_id":"turn-1","started_at":"2026-01-01T10:00:01.000Z"}}
+{"timestamp":"2026-01-01T10:00:01.500Z","type":"turn_context","payload":{"turn_id":"turn-1","cwd":"/workspace/acme","model":"gpt-5.6-sol","approval_policy":"on-request","collaboration_mode":{"mode":"default","settings":{"model":"gpt-5.6-sol","reasoning_effort":"low"}}}}
 {"timestamp":"2026-01-01T10:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"Run the greeting tests."}}
 {"timestamp":"2026-01-01T10:00:03.000Z","type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"Follow repository instructions."}]}}
 {"timestamp":"2026-01-01T10:00:04.000Z","type":"response_item","payload":{"type":"reasoning","id":"reason-1","summary":[{"type":"summary_text","text":"I should run the focused test."}]}}
@@ -7,4 +8,6 @@
 {"timestamp":"2026-01-01T10:00:06.000Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call-x-1","output":"1 test passed"}}
 {"timestamp":"2026-01-01T10:00:07.000Z","type":"event_msg","payload":{"type":"agent_message","message":"The greeting test passes."}}
 {"timestamp":"2026-01-01T10:00:08.000Z","type":"event_msg","payload":{"type":"token_count","info":{"input_tokens":100,"output_tokens":20}}}
+{"timestamp":"2026-01-01T10:00:08.500Z","type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn-1","reason":"interrupted"}}
+{"timestamp":"2026-01-01T10:00:08.600Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<turn_aborted>The user interrupted the previous turn on purpose.</turn_aborted>"}]}}
 {"timestamp":"2026-01-01T10:00:09.000Z","type":"future_event","payload":{"type":"new_shape","value":1}}

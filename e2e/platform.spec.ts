@@ -31,7 +31,7 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.locator("iframe.journey-stage")).toHaveAttribute("title", "Pi Journey Stage");
 
   await page.getByLabel("Renderer").selectOption("builtin.codex-cli");
-  await expect(page.locator("iframe.journey-stage")).toHaveAttribute("title", "Codex Journey Stage");
+  await expect(page.locator("iframe.journey-stage")).toHaveAttribute("title", "OpenAI Codex Journey Stage");
   await expect(stage.getByText("The file contains the greeting constant.", { exact: true })).toBeVisible();
 
   await page.getByLabel("Renderer").selectOption("example.compact-renderer");
@@ -56,31 +56,34 @@ test("Pi renderer follows its native TUI visual hierarchy", async ({ page }) => 
   const stage = page.frameLocator("iframe.journey-stage");
   await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
   await expect(stage.locator(".brand-mark")).toBeHidden();
-  await expect(stage.locator(".stage-title")).toHaveCSS("color", "rgb(149, 189, 183)");
+  await expect(stage.locator(".stage-title")).toHaveCSS("color", "rgb(138, 190, 183)");
+  await expect(stage.locator(".stage-native-pi-help-line")).toHaveCSS("color", "rgb(128, 128, 128)");
+  await expect(stage.locator(".stage-native-pi-key").first()).toHaveCSS("color", "rgb(102, 102, 102)");
   await expect(stage.locator('.activity[data-kind="human-input"]').first()).toHaveCSS(
     "background-color",
-    "rgb(52, 53, 64)"
+    "rgb(52, 53, 65)"
   );
   await expect(stage.locator('.activity[data-kind="reasoning"] details').first()).toHaveAttribute("open", "");
   await expect(stage.locator('.activity[data-kind="tool-invocation"]').first()).toHaveCSS(
     "background-color",
-    "rgb(42, 50, 41)"
+    "rgb(40, 50, 40)"
   );
   await expect(stage.locator('.activity[data-kind="tool-invocation"][data-native-name="bash"]')).toHaveCSS(
     "background-color",
-    "rgb(57, 41, 40)"
+    "rgb(60, 40, 40)"
   );
   await expect(stage.locator('.activity[data-kind="tool-invocation"][data-native-name="bash"] .tool-timeout')).toHaveText(
     "(timeout 30s)"
   );
   const failedToolResult = stage.locator('.activity[data-kind="tool-result"][data-status="failed"]');
-  await expect(failedToolResult).toHaveCSS("background-color", "rgb(57, 41, 40)");
+  await expect(failedToolResult).toHaveCSS("background-color", "rgb(60, 40, 40)");
   await expect(failedToolResult.locator(".tool-duration")).toHaveText("Took 1.0s");
-  await expect(stage.locator(".markdown-heading")).toHaveCSS("color", "rgb(233, 200, 128)");
+  await expect(stage.locator(".markdown-heading")).toHaveCSS("color", "rgb(240, 198, 116)");
   await expect(stage.locator(".markdown-list-marker")).toHaveText("1.");
-  await expect(stage.locator(".markdown-list-marker")).toHaveCSS("color", "rgb(149, 189, 183)");
+  await expect(stage.locator(".markdown-list-marker")).toHaveCSS("color", "rgb(138, 190, 183)");
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
-  await expect(stage.locator(".stage-native-composer")).toHaveCSS("border-top-color", "rgb(136, 161, 187)");
+  await expect(stage.locator('.activity[data-kind="reasoning"] summary').first()).toHaveCSS("font-weight", "400");
+  await expect(stage.locator(".stage-native-composer")).toHaveCSS("border-top-color", "rgb(129, 162, 190)");
   await expectNativeChromeDocked(page, stage);
 });
 
@@ -94,12 +97,12 @@ test("Claude Code renderer follows the native TUI visual hierarchy", async ({ pa
   const payload = stage.locator(".activity-payload").first();
   const toolArgument = stage.locator(".tool-argument").first();
   await expect(body).toHaveCSS("background-color", "rgb(41, 44, 51)");
-  await expect(human).toHaveCSS("background-color", "rgb(55, 55, 55)");
+  await expect(human).toHaveCSS("background-color", "rgb(58, 58, 58)");
   await expect(human).toHaveCSS("border-left-width", "0px");
   await expect(artifact).toBeHidden();
   await expect(payload).toBeHidden();
   await expect(toolArgument).toHaveText("src/greeting.ts");
-  await expect(toolArgument).toHaveCSS("color", "rgb(178, 185, 244)");
+  await expect(toolArgument).toHaveCSS("color", "rgb(175, 215, 255)");
   await expect(page.locator(".terminal-native-path")).toHaveCSS("color", "rgb(141, 184, 232)");
   const assistantActivity = await stage.locator('.activity[data-kind="agent-output"]').first().boundingBox();
   const assistantMarker = await stage.locator('.activity[data-kind="agent-output"] .activity-marker').first().boundingBox();
@@ -111,9 +114,60 @@ test("Claude Code renderer follows the native TUI visual hierarchy", async ({ pa
   const markerCenter = assistantMarker!.y + assistantMarker!.height / 2;
   const textFirstLineCenter = assistantText!.y + assistantText!.height / 2;
   expect(Math.abs(markerCenter - textFirstLineCenter)).toBeLessThan(2);
+  const claudeMascot = await stage.locator(".brand-mark").evaluate((element) =>
+    getComputedStyle(element, "::before").content
+  );
+  expect(claudeMascot).toContain("▐▛███▛█");
   await expect(stage.locator('.activity[data-kind="reasoning"]')).toBeHidden();
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
+  await expect(stage.locator(".stage-native-composer")).toHaveCSS("border-top-color", "rgb(128, 128, 128)");
   await expect(stage.locator(".stage-native-footer")).toBeVisible();
+  await expect(stage.locator(".stage-native-footer-permission")).toContainText("bypass permissions on");
+  await expect(stage.locator(".stage-native-footer-permission-mode")).toHaveCSS("color", "rgb(255, 135, 175)");
+  await expect(stage.locator(".stage-native-footer-permission-help")).toHaveCSS("color", "rgb(148, 148, 148)");
+  await expectNativeChromeDocked(page, stage);
+});
+
+test("Codex renderer follows the installed native TUI hierarchy", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Run the greeting tests.", { exact: true }).click();
+  const stage = page.frameLocator("iframe.journey-stage");
+  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
+  await expect(stage.locator(".stage-title")).toHaveText("OpenAI Codex");
+  await expect(stage.locator(".stage-head")).toHaveCSS("border-top-width", "1px");
+  const codexContext = stage.locator('.activity[data-kind="context-injection"]');
+  await expect(codexContext).toHaveCount(2);
+  await expect(codexContext.first()).toBeHidden();
+  await expect(codexContext.last()).toBeHidden();
+  const interrupted = stage.locator('.activity[data-native-name="turn_aborted"]');
+  await expect(interrupted).toContainText("Conversation interrupted");
+  await expect(interrupted.locator(".activity-marker")).toHaveCSS("color", "rgb(205, 0, 0)");
+  const human = stage.locator('.activity[data-kind="human-input"]').first();
+  await expect(human).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  const humanMarker = await human.locator(".activity-marker").evaluate((element) =>
+    getComputedStyle(element, "::after").content
+  );
+  expect(humanMarker).toBe('"›"');
+  const agentMarker = await stage.locator('.activity[data-kind="agent-output"] .activity-marker').first().evaluate(
+    (element) => getComputedStyle(element, "::after").content
+  );
+  expect(agentMarker).toBe('"•"');
+  const codexTool = stage.locator('.activity[data-kind="tool-invocation"]').first();
+  await expect(codexTool.locator(".native-name")).toHaveCSS("font-weight", "700");
+  await expect(codexTool.locator(".tool-argument")).toHaveText("pnpm test greeting");
+  await expect(stage.locator('.activity[data-kind="tool-result"] + .activity[data-kind="agent-output"]')).toHaveCSS(
+    "border-top-width",
+    "1px"
+  );
+  await expect(stage.locator(".stage-native-composer")).toBeVisible();
+  const placeholder = await stage.locator(".stage-native-composer").evaluate((element) =>
+    getComputedStyle(element, "::after").content
+  );
+  expect(placeholder).toContain("Run /review on my current changes");
+  await expect(stage.locator(".stage-native-footer-model")).toHaveCSS("color", "rgb(246, 226, 183)");
+  await expect(stage.locator(".stage-native-footer-workspace")).toHaveCSS("color", "rgb(171, 223, 167)");
+  await expect(stage.locator(".stage-native-footer-permission")).toHaveText("Ask for approval");
+  await expect(stage.locator(".stage-native-footer-permission")).toHaveCSS("color", "rgb(200, 169, 238)");
   await expectNativeChromeDocked(page, stage);
 });
 
@@ -186,7 +240,8 @@ test("GitHub Copilot CLI renderer follows its native colorful TUI hierarchy", as
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
   await expect(stage.locator(".stage-native-composer > span")).toBeHidden();
   await expect(stage.locator(".stage-native-footer-key")).toHaveCount(4);
-  await expect(stage.locator(".stage-native-footer-effort")).toHaveText(" · Medium");
+  await expect(stage.locator(".stage-native-footer-separator")).toHaveText(" · ");
+  await expect(stage.locator(".stage-native-footer-effort")).toHaveText("Medium");
   await expectNativeChromeDocked(page, stage);
 });
 

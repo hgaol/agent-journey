@@ -14,10 +14,11 @@ describe("built-in Renderer Plugins", () => {
   );
 
   it.each([
-    ["claude-code", "0.3.0", "--stage-human:#373737", "--stage-accent:#ca7c5e"],
+    ["claude-code", "0.4.0", "--stage-human:#3a3a3a", "--stage-accent:#d78787"],
+    ["codex-cli", "0.2.0", "--stage-human:#292c33", "--stage-accent:#00cdcd"],
     ["github-copilot-cli", "0.4.0", "--stage-human:#0c0c0c", "--stage-accent:#61d6d6"],
-    ["pi", "0.3.0", "--stage-human:#343540", "--stage-accent:#95bdb7"]
-  ])("uses screenshot-sampled colors and native hierarchy for %s", (sourceAgent, version, panel, accent) => {
+    ["pi", "0.4.0", "--stage-human:#343541", "--stage-accent:#8abeb7"]
+  ])("uses captured native colors and hierarchy for %s", (sourceAgent, version, panel, accent) => {
     const renderer = rendererForSourceAgent(sourceAgent);
     expect(renderer.manifest.version).toBe(version);
     expect(renderer.css).toContain("--stage-bg:#292c33");
@@ -35,11 +36,30 @@ describe("built-in Renderer Plugins", () => {
     expect(renderer.css).toContain(".stage-native-workspace{display:block");
   });
 
+  it("matches the installed Claude Code mascot, prompt, and editor treatments", () => {
+    const renderer = rendererForSourceAgent("claude-code");
+    expect(renderer.css).toContain("▐▛███▛█");
+    expect(renderer.css).toContain("--stage-muted:#949494");
+    expect(renderer.css).toContain("--stage-border:#808080");
+    expect(renderer.css).toContain("color:#afd7ff");
+  });
+
+  it("matches the installed Codex card, transcript, and status treatments", () => {
+    const renderer = rendererForSourceAgent("codex-cli");
+    expect(renderer.css).toContain('content:">_"');
+    expect(renderer.css).toContain('content:"›"');
+    expect(renderer.css).toContain('content:"Searched the web for"');
+    expect(renderer.css).toContain("color:#f6e2b7");
+    expect(renderer.css).toContain("color:#abdfa7");
+  });
+
   it("keeps Pi's native reasoning and tool-state treatments", () => {
     const renderer = rendererForSourceAgent("pi");
-    expect(renderer.css).toContain("background:#2a3229!important");
-    expect(renderer.css).toContain("background:#392928!important");
+    expect(renderer.css).toContain("background:#283228!important");
+    expect(renderer.css).toContain("background:#3c2828!important");
     expect(renderer.css).toContain("--stage-expand-reasoning:1");
+    expect(renderer.css).toContain('data-thinking-level="medium"');
+    expect(renderer.css).toContain("border-color:#81a2be");
   });
 
   it("uses Neutral Fallback for unknown Source Agents", () => {

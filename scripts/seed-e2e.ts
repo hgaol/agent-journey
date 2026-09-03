@@ -3,6 +3,7 @@ import path from "node:path";
 import { SqliteJourneyArchive } from "@agentjourney/archive";
 import {
   claudeCodeAdapter,
+  codexCliAdapter,
   copilotCliAdapter,
   piAdapter
 } from "@agentjourney/builtin-adapters";
@@ -15,7 +16,7 @@ await rm(dataRoot, { recursive: true, force: true });
 const archive = await SqliteJourneyArchive.open(path.join(dataRoot, "archive"));
 
 async function seed(
-  sourceAgent: "pi" | "claude-code" | "github-copilot-cli",
+  sourceAgent: "pi" | "claude-code" | "codex-cli" | "github-copilot-cli",
   adapter: SourceAdapterPlugin
 ): Promise<void> {
   const root = fixturePath(sourceAgent);
@@ -42,5 +43,6 @@ async function seed(
 
 await seed("pi", piAdapter);
 await seed("claude-code", claudeCodeAdapter);
+await seed("codex-cli", codexCliAdapter);
 await seed("github-copilot-cli", copilotCliAdapter);
 archive.close();

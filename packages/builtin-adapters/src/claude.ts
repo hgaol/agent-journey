@@ -15,7 +15,7 @@ import {
 
 const manifest = {
   id: "builtin.claude-code",
-  version: "0.1.1",
+  version: "0.1.2",
   interfaceVersion: "1.0.0",
   displayName: "Claude Code",
   sourceAgent: "claude-code",
@@ -47,7 +47,7 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
       workspace ??= asString(record.cwd);
       sourceAgentVersion ??= asString(record.version);
       startedAt ??= normalizeTimestamp(record.timestamp);
-      if (record.type === "ai-title") title ??= asString(record.aiTitle);
+      if (record.type === "ai-title") title = asString(record.aiTitle) ?? title;
       if (record.type === "user" && !record.isMeta) {
         title ??= firstText(asRecord(record.message)?.content)?.slice(0, 120);
       }
@@ -270,6 +270,22 @@ function parseFile(
         payload: jsonValue(record)
       });
       recordActivityIds.push(id);
+      finishRelationships();
+      builder.disposition(line.anchor, "canonical", [id]);
+      continue;
+    }
+
+    if (type === "cost-state") {
+      const id = builder.addActivity({
+        kind: "usage-observation",
+        anchor: line.anchor,
+        sourceOrder: sourceBase,
+        threadId,
+        timestamp,
+        actor: "system",
+        nativeName: type,
+        payload: jsonValue(record)
+      });
       finishRelationships();
       builder.disposition(line.anchor, "canonical", [id]);
       continue;

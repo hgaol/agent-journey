@@ -16,7 +16,7 @@ import {
 
 const manifest = {
   id: "builtin.codex-cli",
-  version: "0.1.1",
+  version: "0.1.2",
   interfaceVersion: "1.0.0",
   displayName: "OpenAI Codex CLI",
   sourceAgent: "codex-cli",
@@ -119,6 +119,15 @@ async function discover(source: VirtualSource): Promise<DiscoveredJourney[]> {
 
 function itemText(item: Record<string, unknown>): string {
   return firstText(item.message ?? item.content ?? item.summary ?? item.text) ?? "";
+}
+
+function decodedToolPayload(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return asRecord(JSON.parse(value)) ?? value;
+  } catch {
+    return value;
+  }
 }
 
 function parseCodexFile(
@@ -261,6 +270,9 @@ function parseCodexFile(
             ...(targetActivityId ? { links: [{ relation: "result-of", targetActivityId }] } : {})
           })
         );
+      } else if (payloadType === "web_search_end") {
+        builder.disposition(line.anchor, "transport", [], "web_search_end is represented by its response item");
+        continue;
       } else if (payloadType === "sub_agent_activity") {
         const agentThreadId = asString(payload.agent_thread_id);
         if (agentThreadId) builder.addThread({ id: `agent:${agentThreadId}`, parentThreadId: threadId, label: asString(payload.agent_path) ?? agentThreadId });
@@ -276,7 +288,22 @@ function parseCodexFile(
             payload: jsonValue(payload)
           })
         );
-      } else if (["task_started", "task_complete", "turn_started", "turn_aborted", "thread_settings_applied", "context_compacted"].includes(payloadType)) {
+      } else if (payloadType === "turn_aborted") {
+        activityIds.push(
+          builder.addActivity({
+            kind: "diagnostic",
+            anchor: line.anchor,
+            sourceOrder: sourceBase,
+            threadId,
+            timestamp,
+            actor: "system",
+            nativeName: payloadType,
+            status: "cancelled",
+            text: "Conversation interrupted",
+            payload: jsonValue(payload)
+          })
+        );
+      } else if (["task_started", "task_complete", "turn_started", "thread_settings_applied", "context_compacted"].includes(payloadType)) {
         activityIds.push(
           builder.addActivity({
             kind: "state-transition",
@@ -315,7 +342,9 @@ function parseCodexFile(
           })
         );
       } else if (["function_call", "custom_tool_call", "local_shell_call", "web_search_call"].includes(payloadType)) {
-        const nativeName = asString(payload.name) ?? payloadType;
+        const nativeName = payloadType === "web_search_call"
+          ? "web_search"
+          : asString(payload.name) ?? payloadType;
         const activityId = builder.addActivity({
           kind: "tool-invocation",
           anchor: line.anchor,
@@ -326,7 +355,11 @@ function parseCodexFile(
           nativeName,
           toolCapabilities: toolCapabilities(nativeName),
           status: statusFrom(payload.status),
-          payload: jsonValue(payload.arguments ?? payload.input ?? payload)
+          payload: jsonValue(decodedToolPayload(
+            payloadType === "web_search_call"
+              ? payload.action ?? payload
+              : payload.arguments ?? payload.input ?? payload
+          ))
         });
         const callId = asString(payload.call_id) ?? asString(payload.id);
         if (callId) toolCalls.set(callId, activityId);
@@ -356,7 +389,7 @@ function parseCodexFile(
           builder.disposition(line.anchor, "duplicate", [], `response_item ${role} message is represented by event_msg projection`);
           continue;
         }
-        const injected = role === "developer" || role === "system" || (role === "user" && /(?:AGENTS\.md|<environment_context>|<INSTRUCTIONS>)/iu.test(text));
+        const injected = role === "developer" || role === "system" || (role === "user" && /(?:AGENTS\.md|<environment_context>|<INSTRUCTIONS>|<turn_aborted>)/iu.test(text));
         if (role === "assistant" || role === "user" || injected) {
           const kind = role === "assistant" ? "agent-output" : injected ? "context-injection" : "human-input";
           activityIds.push(
