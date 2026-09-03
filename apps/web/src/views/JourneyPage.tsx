@@ -610,7 +610,16 @@ export function JourneyPage(): React.ReactNode {
           >
             ›
           </button>
-          <code>{replayClock(transportFrame?.observedOffsetMs)}</code>
+          <code title="Observed Replay position">{replayClock(transportFrame?.observedOffsetMs)}</code>
+          {view === "replay" && (
+            <code
+              className="terminal-remaining-time"
+              data-testid="replay-remaining-time"
+              title={replay.canAutoPlay
+                ? "Estimated remaining time after speed and cadence settings"
+                : "Remaining time is unavailable for manual-only Replay"}
+            >{replay.canAutoPlay ? `left ${replayClock(replay.remainingMs)}` : "left · manual"}</code>
+          )}
           <span>{view === "replay" ? replay.index + 1 : replay.frames.length}/{replay.frames.length}</span>
           <select
             aria-label="Content streaming"

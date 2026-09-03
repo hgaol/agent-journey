@@ -355,6 +355,23 @@ export function replayFrameDelay(
   );
 }
 
+export function replayRemainingDuration(
+  frames: readonly ReplayFrame[],
+  currentIndex: number,
+  options: ReplayDelayOptions & { firstFrameMinimumMs?: number }
+): number {
+  const index = Math.max(0, Math.min(Math.floor(currentIndex), Math.max(0, frames.length - 1)));
+  let remaining = 0;
+  for (let frameIndex = index; frameIndex < frames.length - 1; frameIndex += 1) {
+    let delay = replayFrameDelay(frames[frameIndex]!, frames[frameIndex + 1]!, options);
+    if (frameIndex === index && index === 0 && options.firstFrameMinimumMs !== undefined) {
+      delay = Math.max(options.firstFrameMinimumMs, delay);
+    }
+    remaining += delay;
+  }
+  return remaining;
+}
+
 export function canAutoPlayReplay(
   frames: readonly ReplayFrame[],
   streamMode: ReplayStreamMode

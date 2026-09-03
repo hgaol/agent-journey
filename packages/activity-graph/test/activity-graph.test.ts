@@ -6,7 +6,8 @@ import {
   deriveReplayFrames,
   deriveTurns,
   linearizeActivityGraph,
-  replayFrameDelay
+  replayFrameDelay,
+  replayRemainingDuration
 } from "../src/index.js";
 
 function activity(id: string, kind: ActivityDocument["kind"], sourceOrder: number, extra: Partial<ActivityDocument> = {}): ActivityDocument {
@@ -132,6 +133,27 @@ describe("Activity Graph", () => {
       timelineSpeed: 16,
       streamingSpeed: 16
     })).toBeGreaterThanOrEqual(180);
+  });
+
+  it("estimates remaining Replay time using timeline, cadence, and first-frame timing", () => {
+    const frames = deriveReplayFrames([
+      activity("a", "human-input", 1, { timestamp: "2026-01-01T00:00:00.000Z" }),
+      activity("b", "agent-output", 2, { timestamp: "2026-01-01T00:00:01.000Z" }),
+      activity("c", "agent-output", 3, { timestamp: "2026-01-01T00:00:03.000Z" })
+    ]);
+    const normal = replayRemainingDuration(frames, 0, {
+      timelineSpeed: 1,
+      streamingSpeed: 1,
+      firstFrameMinimumMs: 400
+    });
+    const fast = replayRemainingDuration(frames, 0, {
+      timelineSpeed: 2,
+      streamingSpeed: 1,
+      firstFrameMinimumMs: 400
+    });
+    expect(normal).toBe(3000);
+    expect(fast).toBe(1500);
+    expect(replayRemainingDuration(frames, 2, { timelineSpeed: 1, streamingSpeed: 1 })).toBe(0);
   });
 
   it("uses a fast sixteen-character default for simulated streaming", () => {

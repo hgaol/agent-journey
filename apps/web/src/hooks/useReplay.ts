@@ -4,6 +4,7 @@ import {
   canAutoPlayReplay,
   deriveReplayFrames,
   replayFrameDelay,
+  replayRemainingDuration,
   type ReplayStreamMode
 } from "@agentjourney/activity-graph";
 
@@ -22,6 +23,7 @@ export function useReplay(
   const [speed, setSpeed] = useState(1);
   const [streamingSpeed, setStreamingSpeed] = useState(1);
   const [holdingFirstFrame, setHoldingFirstFrame] = useState(false);
+  const [remainingMs, setRemainingMs] = useState(0);
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
   const replayVariant = `${streamMode}:${simulateHumanInput ? "typed-prompts" : "instant-prompts"}`;
   const previousReplayVariant = useRef(replayVariant);
@@ -37,6 +39,22 @@ export function useReplay(
   useEffect(() => {
     if (index > Math.max(0, frames.length - 1)) setIndex(Math.max(0, frames.length - 1));
   }, [frames.length, index]);
+
+  const plannedRemainingMs = useMemo(() => replayRemainingDuration(frames, index, {
+    timelineSpeed: speed,
+    streamingSpeed,
+    ...(holdingFirstFrame && index === 0 ? { firstFrameMinimumMs: 400 } : {})
+  }), [frames, holdingFirstFrame, index, speed, streamingSpeed]);
+
+  useEffect(() => {
+    setRemainingMs(plannedRemainingMs);
+    if (!playing || plannedRemainingMs <= 0) return;
+    const startedAt = window.performance.now();
+    const interval = window.setInterval(() => {
+      setRemainingMs(Math.max(0, plannedRemainingMs - (window.performance.now() - startedAt)));
+    }, 100);
+    return () => window.clearInterval(interval);
+  }, [plannedRemainingMs, playing]);
 
   useEffect(() => {
     if (!playing || !canAutoPlay || index >= frames.length - 1) {
@@ -68,6 +86,7 @@ export function useReplay(
     streamingSpeed,
     setStreamingSpeed,
     current: frames[index],
+    remainingMs,
     canAutoPlay,
     streamMode,
     restart: (autoPlay = canAutoPlay) => {

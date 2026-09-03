@@ -132,6 +132,10 @@ _Avoid_: Review View, simulated terminal recording
 The current position within Replay View, controlling which evidenced Activity has been revealed.
 _Avoid_: Cursor, fake clock
 
+**Remaining Replay Time**:
+A live estimate of presentation time left from the Playhead after Timeline Speed, cadence speed, first-frame hold, simulated frames, and idle-gap compression. It is unavailable rather than invented for manual-only Replay.
+_Avoid_: Source duration, wall-clock evidence
+
 **Turn**:
 A navigation grouping of Activities associated with one interaction cycle. Its boundaries retain whether they were explicitly evidenced by the Source Agent or inferred for presentation.
 _Avoid_: Core Activity, guaranteed source fact

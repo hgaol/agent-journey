@@ -45,6 +45,7 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.locator(".terminal-transport > span")).toContainText("1/");
   await expect(page.locator(".terminal-play")).toHaveText("Ⅱ");
   await expect(page.locator(".terminal-transport > span")).not.toContainText("1/");
+  await page.locator(".terminal-play").click();
   await page.getByRole("button", { name: "Evidence" }).click();
   await expect(page.getByRole("dialog", { name: "Source Evidence inspector" })).toBeVisible();
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
@@ -266,6 +267,11 @@ test("starts progressive Replay on the first switch from Review", async ({ page 
   await expect(finalAnswer).toBeHidden();
   await expect(stage.locator(".activity")).toHaveCount(1);
   await expect(page.locator(".terminal-play")).toHaveText("Ⅱ");
+  const remaining = page.getByTestId("replay-remaining-time");
+  await expect(remaining).toHaveText(/^left \d{2}:\d{2}\.\d$/u);
+  await expect(remaining).not.toHaveText("left 00:00.0");
+  const initialRemaining = await remaining.textContent();
+  await expect.poll(() => remaining.textContent()).not.toBe(initialRemaining);
 });
 
 test("simulates prompt typing in the Copilot composer before submission", async ({ page }) => {
@@ -360,10 +366,13 @@ test("terminal transcript fills the available center pane", async ({ page }) => 
   await page.getByTestId("terminal-replay-debugger").waitFor();
   const pane = await page.getByLabel("Terminal session replay").boundingBox();
   const stage = await page.locator(".terminal-stage-frame").boundingBox();
+  const inspector = await page.locator(".terminal-activity-inspector").boundingBox();
   expect(pane).not.toBeNull();
   expect(stage).not.toBeNull();
   expect(stage!.height).toBeGreaterThan(pane!.height * 0.75);
   expect(Math.abs((stage!.y + stage!.height) - (pane!.y + pane!.height))).toBeLessThan(2);
+  expect(inspector).not.toBeNull();
+  expect(inspector!.x + inspector!.width).toBeLessThanOrEqual(1440);
 });
 
 test("shows date, size, and turn estimates in source scan previews", async ({ page }) => {
