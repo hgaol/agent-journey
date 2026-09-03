@@ -537,7 +537,11 @@ export function JourneyPage(): React.ReactNode {
             <span>{detail.interpretation.journey.gitBranch ?? "no branch"}</span>
             <span>{selectedRevision?.identityConflict ? "⚠ identity conflict" : "source evidence"}</span>
             <span>{view === "replay"
-              ? `${streamMode} stream${simulatePromptTyping ? " · simulated prompt typing" : ""}`
+              ? `${streamMode} stream${simulatePromptTyping
+                  ? replay.hasSimulatedInputPaste
+                    ? " · simulated prompt typing + large-input paste"
+                    : " · simulated prompt typing"
+                  : ""}`
               : "full transcript"}</span>
           </header>
 
@@ -738,7 +742,7 @@ export function JourneyPage(): React.ReactNode {
             }}
           >
             <option value="instant">prompt · instant</option>
-            <option value="simulated">prompt · simulated typing</option>
+            <option value="simulated">prompt · simulated typing/paste</option>
           </select>
           {simulatePromptTyping && (
             <select
@@ -777,8 +781,10 @@ export function JourneyPage(): React.ReactNode {
             <option value={4}>timeline 4×</option>
           </select>
           <small>
-            {transportFrame?.timing === "simulated"
-              ? "SIMULATED cadence"
+            {transportFrame?.simulatedInputPaste
+              ? "SIMULATED prompt paste"
+              : transportFrame?.timing === "simulated"
+                ? "SIMULATED cadence"
               : transportFrame?.timing === "evidenced"
                 ? "evidenced timestamp"
                 : transportFrame?.timing === "source-order"
@@ -790,7 +796,9 @@ export function JourneyPage(): React.ReactNode {
                 ? ` · ${transportFrame.simulatedTextLength} characters`
                 : ""}
             {streamMode !== "events" ? ` · stream ${replay.streamingSpeed}×` : ""}
-            {simulatePromptTyping ? ` · SIMULATED prompt typing ${replay.typingSpeed}×` : ""}
+            {simulatePromptTyping
+              ? ` · SIMULATED prompt typing ${replay.typingSpeed}×${replay.hasSimulatedInputPaste ? " · large inputs pasted" : ""}`
+              : ""}
             {transportFrame?.idleGapCompressed ? " · idle compressed" : ""}
           </small>
           <div className="terminal-native-context">

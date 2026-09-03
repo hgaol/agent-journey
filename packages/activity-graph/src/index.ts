@@ -12,6 +12,8 @@ export interface ReplayOptions {
   simulatedInputChunkSize?: number;
   simulatedInputChunkMs?: number;
   simulatedInputSubmitMs?: number;
+  simulatedInputPasteThreshold?: number;
+  simulatedInputPasteMs?: number;
   sourceOrderStepMs?: number;
 }
 
@@ -28,6 +30,7 @@ export interface ReplayFrame {
   deliveryChunkIndex?: number;
   simulatedTextLength?: number;
   simulatedInputTextLength?: number;
+  simulatedInputPaste?: boolean;
   inputSubmitted?: boolean;
   idleGapCompressed: boolean;
 }
@@ -158,6 +161,7 @@ interface ReplayPoint {
   deliveryChunkIndex?: number | undefined;
   simulatedTextLength?: number | undefined;
   simulatedInputTextLength?: number | undefined;
+  simulatedInputPaste?: boolean | undefined;
   inputSubmitted?: boolean | undefined;
   simulatedStepMs?: number | undefined;
 }
@@ -176,6 +180,8 @@ export function deriveReplayFrames(
     simulatedInputChunkSize = 1,
     simulatedInputChunkMs = 45,
     simulatedInputSubmitMs = 240,
+    simulatedInputPasteThreshold = 1_000,
+    simulatedInputPasteMs = 400,
     sourceOrderStepMs = 40
   } = options;
   const ordered = linearizeActivityGraph(activities);
@@ -196,6 +202,8 @@ export function deriveReplayFrames(
     if (canSimulateInput) {
       const characters = [...activity.text!];
       const chunkSize = Math.max(1, Math.floor(simulatedInputChunkSize));
+      const pasteThreshold = Math.max(1, Math.floor(simulatedInputPasteThreshold));
+      const usesSimulatedPaste = characters.length > pasteThreshold;
       const drafts: ReplayPoint[] = [{
         activity,
         activityIndex,
@@ -204,24 +212,36 @@ export function deriveReplayFrames(
         simulatedInputTextLength: 0,
         simulatedStepMs: simulatedInputChunkMs
       }];
-      for (let length = chunkSize; length < characters.length; length += chunkSize) {
+      if (usesSimulatedPaste) {
         drafts.push({
           activity,
           activityIndex,
           observedAt: activity.timestamp,
           streamSource: "simulated" as const,
-          simulatedInputTextLength: length,
+          simulatedInputTextLength: characters.length,
+          simulatedInputPaste: true,
+          simulatedStepMs: simulatedInputPasteMs
+        });
+      } else {
+        for (let length = chunkSize; length < characters.length; length += chunkSize) {
+          drafts.push({
+            activity,
+            activityIndex,
+            observedAt: activity.timestamp,
+            streamSource: "simulated" as const,
+            simulatedInputTextLength: length,
+            simulatedStepMs: simulatedInputChunkMs
+          });
+        }
+        drafts.push({
+          activity,
+          activityIndex,
+          observedAt: activity.timestamp,
+          streamSource: "simulated" as const,
+          simulatedInputTextLength: characters.length,
           simulatedStepMs: simulatedInputChunkMs
         });
       }
-      drafts.push({
-        activity,
-        activityIndex,
-        observedAt: activity.timestamp,
-        streamSource: "simulated" as const,
-        simulatedInputTextLength: characters.length,
-        simulatedStepMs: simulatedInputChunkMs
-      });
       drafts.push({
         activity,
         activityIndex,
@@ -301,6 +321,7 @@ export function deriveReplayFrames(
       ...(point.deliveryChunkIndex !== undefined ? { deliveryChunkIndex: point.deliveryChunkIndex } : {}),
       ...(point.simulatedTextLength !== undefined ? { simulatedTextLength: point.simulatedTextLength } : {}),
       ...(point.simulatedInputTextLength !== undefined ? { simulatedInputTextLength: point.simulatedInputTextLength } : {}),
+      ...(point.simulatedInputPaste ? { simulatedInputPaste: true } : {}),
       ...(point.inputSubmitted ? { inputSubmitted: true } : {}),
       ...(hasObserved
         ? {
@@ -337,8 +358,12 @@ export function replayFrameDelay(
     && (next.streamSource === "recorded" || next.streamSource === "simulated");
   const withinPromptTyping = withinContentStream
     && (next.simulatedInputTextLength !== undefined || next.inputSubmitted === true);
-  const selectedSpeed = withinPromptTyping
-    ? options.typingSpeed ?? options.streamingSpeed
+  const withinPromptPaste = withinPromptTyping
+    && (current.simulatedInputPaste === true || next.simulatedInputPaste === true);
+  const selectedSpeed = withinPromptPaste
+    ? 1
+    : withinPromptTyping
+      ? options.typingSpeed ?? options.streamingSpeed
     : withinContentStream
       ? options.streamingSpeed
       : options.timelineSpeed;

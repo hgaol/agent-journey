@@ -63,6 +63,7 @@ export interface ReplayVideoFramePlan {
   frames: ReplayFrame[];
   durationsMs: number[];
   durationMs: number;
+  hasSimulatedInputPaste: boolean;
 }
 
 function publishProgress(input: ReplayVideoExportInput, progress: ReplayVideoProgress): void {
@@ -136,7 +137,12 @@ export function planReplayVideo(
   });
   const durationMs = durationsMs.reduce((total, duration) => total + duration, 0);
   if (durationMs > MAX_DURATION_MS) throw new Error("Replay video would exceed the two-hour export limit; choose a faster speed");
-  return { frames, durationsMs, durationMs };
+  return {
+    frames,
+    durationsMs,
+    durationMs,
+    hasSimulatedInputPaste: frames.some(({ simulatedInputPaste }) => simulatedInputPaste)
+  };
 }
 
 function stageAtFrame(
@@ -243,7 +249,8 @@ async function connectStage(page: Page): Promise<void> {
 async function addExportBadge(
   page: Page,
   options: ReplayVideoExportOptionsDocument,
-  rendererName: string
+  rendererName: string,
+  hasSimulatedInputPaste: boolean
 ): Promise<void> {
   const mode = options.streamMode === "simulated"
     ? "SIMULATED STREAM"
@@ -256,7 +263,7 @@ async function addExportBadge(
     badge.textContent = `${label} · ${redaction}`;
     document.body.append(badge);
   }, {
-    label: `${rendererName.toUpperCase()} · ${options.quality.toUpperCase()} · ${options.fps} FPS · ${mode}${options.promptTyping ? ` · SIMULATED PROMPT TYPING ${options.typingSpeed ?? 1}×` : ""} · ${options.speed}×`,
+    label: `${rendererName.toUpperCase()} · ${options.quality.toUpperCase()} · ${options.fps} FPS · ${mode}${options.promptTyping ? ` · SIMULATED PROMPT TYPING ${options.typingSpeed ?? 1}×${hasSimulatedInputPaste ? " + LARGE-INPUT PASTE" : ""}` : ""} · ${options.speed}×`,
     redaction: options.reveal ? "UNREDACTED" : "REDACTED"
   });
   await page.addStyleTag({ content: "#agentjourney-video-badge{position:fixed;z-index:2147483647;top:10px;right:10px;padding:5px 7px;border:1px solid #ffffff2b;border-radius:3px;background:#090b0dcc;color:#d4d4d4;font:10px ui-monospace,monospace;letter-spacing:.06em}" });
@@ -347,7 +354,8 @@ export class LocalReplayVideoExporter implements ReplayVideoExporter {
       await addExportBadge(
         page,
         input.options,
-        `${input.renderer.manifest.displayName} · ${launched.label}`
+        `${input.renderer.manifest.displayName} · ${launched.label}`,
+        plan.hasSimulatedInputPaste
       );
       await page.addStyleTag({ content: "*{animation:none!important;transition:none!important}html{scroll-behavior:auto!important}" });
       const imagePaths: string[] = [];

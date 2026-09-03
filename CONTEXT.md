@@ -241,11 +241,15 @@ An explicitly labeled, optional TUI-like character reveal used when no Delivery 
 _Avoid_: Recorded Streaming, faithful cadence
 
 **Simulated Prompt Typing**:
-A clearly labeled presentation in which final Human Input text is revealed as a draft in the source-native composer, then moved into the transcript as submitted. It does not claim captured keystrokes and never sends the prompt to a Source Agent.
+A clearly labeled presentation in which final Human Input text is revealed as a draft in the source-native composer, then moved into the transcript as submitted. It does not claim captured keystrokes and never sends the prompt to a Source Agent. Oversized input is not misrepresented as tens of thousands of keystrokes: the complete content appears in one explicitly labeled Simulated Prompt Paste, then is submitted.
 _Avoid_: Recorded input, Agent Control, evidenced typing cadence
 
+**Simulated Prompt Paste**:
+A presentation-only insertion used for oversized Human Input, such as a prompt followed by a pasted build log. It is visibly labeled, preserves the complete final Human Input, and makes no claim that Source Evidence recorded a clipboard action.
+_Avoid_: Recorded paste, omitted prompt content, adaptive typing speed
+
 **Typing Speed**:
-A user-selected 0.5×–4× multiplier applied only to Simulated Prompt Typing. It remains independent from response Streaming Speed and inter-Activity Timeline Speed, and targets the same character cadence regardless of Journey size.
+A user-selected 0.5×–4× multiplier applied only to characters presented as Simulated Prompt Typing. It remains independent from response Streaming Speed and inter-Activity Timeline Speed, and targets the same character cadence regardless of Journey size; a Simulated Prompt Paste does not masquerade as accelerated typing.
 _Avoid_: Recorded keystroke rate, Streaming Speed
 
 **Streaming Speed**:

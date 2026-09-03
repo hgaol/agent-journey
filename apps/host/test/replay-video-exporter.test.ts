@@ -108,6 +108,23 @@ describe("Replay video export", () => {
     expect(slow.durationMs).toBeGreaterThan(fast.durationMs);
   });
 
+  it("keeps MP4 planning bounded when a prompt contains a large pasted log", () => {
+    const longPromptStage = stage();
+    longPromptStage.activities[0] = {
+      ...longPromptStage.activities[0]!,
+      text: `fix CI issue.\n\n${"2026-08-23 CI output\n".repeat(4_000)}`
+    };
+    const plan = planReplayVideo(longPromptStage, {
+      speed: 1,
+      streamMode: "events",
+      promptTyping: true,
+      typingSpeed: 1
+    });
+    expect(plan.frames.length).toBeLessThan(100);
+    expect(plan.hasSimulatedInputPaste).toBe(true);
+    expect(plan.durationMs).toBeLessThan(10_000);
+  });
+
   it("requires an explicit simulated stream for fully untimed histories", () => {
     expect(() => planReplayVideo(stage(false), { speed: 1, streamMode: "events" })).toThrow(/Simulated/u);
     expect(planReplayVideo(stage(false), { speed: 1, streamMode: "simulated" }).frames.length).toBeGreaterThan(1);

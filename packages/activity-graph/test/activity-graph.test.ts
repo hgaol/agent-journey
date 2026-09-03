@@ -167,6 +167,26 @@ describe("Activity Graph", () => {
     expect(replayRemainingDuration(frames, 2, { timelineSpeed: 1, streamingSpeed: 1 })).toBe(0);
   });
 
+  it("presents oversized Human Input as one simulated paste instead of thousands of keystrokes", () => {
+    const input = `fix CI issue.\n\n${"2026-08-23 CI output\n".repeat(4_000)}`;
+    const frames = deriveReplayFrames(
+      [activity("large-prompt", "human-input", 1, { text: input })],
+      { streamMode: "simulated", simulateHumanInput: true }
+    );
+    expect(frames.map(({ simulatedInputTextLength, simulatedInputPaste, inputSubmitted }) => ({
+      simulatedInputTextLength,
+      simulatedInputPaste,
+      inputSubmitted
+    }))).toEqual([
+      { simulatedInputTextLength: 0, simulatedInputPaste: undefined, inputSubmitted: undefined },
+      { simulatedInputTextLength: input.length, simulatedInputPaste: true, inputSubmitted: undefined },
+      { simulatedInputTextLength: undefined, simulatedInputPaste: undefined, inputSubmitted: true }
+    ]);
+    const slow = replayRemainingDuration(frames, 0, { timelineSpeed: 1, streamingSpeed: 1, typingSpeed: 0.5 });
+    const fast = replayRemainingDuration(frames, 0, { timelineSpeed: 1, streamingSpeed: 1, typingSpeed: 4 });
+    expect(fast).toBe(slow);
+  });
+
   it("uses a fast sixteen-character default for simulated streaming", () => {
     const frames = deriveReplayFrames(
       [activity("stream", "agent-output", 1, { text: "x".repeat(64) })],

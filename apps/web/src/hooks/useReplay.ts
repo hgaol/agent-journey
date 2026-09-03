@@ -25,6 +25,10 @@ export function useReplay(
   const [typingSpeed, setTypingSpeed] = useState(1);
   const [holdingFirstFrame, setHoldingFirstFrame] = useState(false);
   const canAutoPlay = canAutoPlayReplay(frames, streamMode);
+  const hasSimulatedInputPaste = useMemo(
+    () => frames.some(({ simulatedInputPaste }) => simulatedInputPaste),
+    [frames]
+  );
   const replayVariant = `${streamMode}:${simulateHumanInput ? "typed-prompts" : "instant-prompts"}`;
   const previousReplayVariant = useRef(replayVariant);
   const framePresentedAtRef = useRef<number | undefined>(undefined);
@@ -121,6 +125,7 @@ export function useReplay(
     current: frames[index],
     plannedRemainingMs,
     canAutoPlay,
+    hasSimulatedInputPaste,
     streamMode,
     restart: (autoPlay = canAutoPlay) => {
       setIndex(0);
