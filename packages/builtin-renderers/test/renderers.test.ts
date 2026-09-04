@@ -17,7 +17,7 @@ describe("built-in Renderer Plugins", () => {
     ["claude-code", "0.4.0", "--stage-human:#3a3a3a", "--stage-accent:#d78787"],
     ["codex-cli", "0.2.0", "--stage-human:#292c33", "--stage-accent:#00cdcd"],
     ["github-copilot-cli", "0.4.1", "--stage-human:#0c0c0c", "--stage-accent:#61d6d6"],
-    ["pi", "0.4.0", "--stage-human:#343541", "--stage-accent:#8abeb7"]
+    ["pi", "0.4.1", "--stage-human:#343541", "--stage-accent:#8abeb7"]
   ])("uses captured native colors and hierarchy for %s", (sourceAgent, version, panel, accent) => {
     const renderer = rendererForSourceAgent(sourceAgent);
     expect(renderer.manifest.version).toBe(version);
@@ -61,6 +61,8 @@ describe("built-in Renderer Plugins", () => {
     expect(renderer.css).toContain("--stage-expand-reasoning:1");
     expect(renderer.css).toContain('data-thinking-level="medium"');
     expect(renderer.css).toContain("border-color:#81a2be");
+    expect(renderer.css).toContain("height:38px;margin:auto 0 0 2.5px");
+    expect(renderer.css).toContain("width:8.5px;height:18.5px;margin-left:0");
   });
 
   it("uses Neutral Fallback for unknown Source Agents", () => {

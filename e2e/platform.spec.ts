@@ -86,6 +86,16 @@ test("Pi renderer follows its native TUI visual hierarchy", async ({ page }) => 
   await expect(stage.locator(".stage-native-composer")).toBeVisible();
   await expect(stage.locator('.activity[data-kind="reasoning"] summary').first()).toHaveCSS("font-weight", "400");
   await expect(stage.locator(".stage-native-composer")).toHaveCSS("border-top-color", "rgb(129, 162, 190)");
+  const frameBox = await page.locator("iframe.journey-stage").boundingBox();
+  const composerBox = await stage.locator(".stage-native-composer").boundingBox();
+  const cursorBox = await stage.locator(".stage-native-composer-entry > i").boundingBox();
+  expect(frameBox).not.toBeNull();
+  expect(composerBox).not.toBeNull();
+  expect(cursorBox).not.toBeNull();
+  expect(composerBox!.height).toBe(38);
+  expect(cursorBox).toMatchObject({ width: 8.5, height: 18.5 });
+  expect(composerBox!.x - frameBox!.x).toBe(2.5);
+  expect(Math.abs((frameBox!.x + frameBox!.width) - (composerBox!.x + composerBox!.width))).toBeLessThan(1);
   await expectNativeChromeDocked(page, stage);
 });
 
