@@ -1,5 +1,12 @@
-import type { ActivityDocument, StageDocument } from "@agentjourney/contracts";
+import {
+  canAutoPlayReplay,
+  deriveReplayFrames,
+  type ReplayFrame,
+  type ReplayStreamMode
+} from "@agentjourney/activity-graph";
+import type { StageDocument } from "@agentjourney/contracts";
 import type { RendererPlugin } from "@agentjourney/plugin-sdk";
+import { buildStageSource } from "./interactive-stage.js";
 
 function escapeHtml(value: unknown): string {
   return String(value)
@@ -18,36 +25,82 @@ function safeCss(css: string): string {
     .replaceAll("</style", "<\\/style");
 }
 
-function activityHtml(activity: ActivityDocument, index: number, note?: string): string {
-  const payload = activity.payload === undefined
-    ? ""
-    : `<details><summary>Source detail</summary><pre>${escapeHtml(JSON.stringify(activity.payload, null, 2))}</pre></details>`;
-  const capabilities = (activity.toolCapabilities ?? []).map((value) => `<span>${escapeHtml(value)}</span>`).join("");
-  return `<article class="activity" data-index="${index}" data-kind="${escapeHtml(activity.kind)}" data-thread="${escapeHtml(activity.threadId)}">
-<header><strong>${escapeHtml(activity.kind)}</strong>${activity.nativeName ? `<b>${escapeHtml(activity.nativeName)}</b>` : ""}${capabilities}<time>${escapeHtml(activity.timestamp ?? "")}</time></header>
-${activity.text ? `<div class="text">${escapeHtml(activity.text)}</div>` : ""}
-${note ? `<aside>${escapeHtml(note)}</aside>` : ""}
-${payload}<footer>${escapeHtml(activity.evidenceAnchor)}</footer></article>`;
+function scriptJson(value: unknown): string {
+  return JSON.stringify(value)
+    .replaceAll("<", "\\u003c")
+    .replaceAll("\u2028", "\\u2028")
+    .replaceAll("\u2029", "\\u2029");
+}
+
+interface ExportReplayPlan {
+  frames: ReplayFrame[];
+  canAutoPlay: boolean;
+}
+
+function replayPlans(stage: StageDocument): Record<string, ExportReplayPlan> {
+  const plans: Record<string, ExportReplayPlan> = {};
+  for (const streamMode of ["events", "recorded", "simulated"] satisfies ReplayStreamMode[]) {
+    for (const simulateHumanInput of [false, true]) {
+      const frames = deriveReplayFrames(stage.activities, { streamMode, simulateHumanInput });
+      plans[`${streamMode}:${simulateHumanInput ? "typed" : "instant"}`] = {
+        frames,
+        canAutoPlay: canAutoPlayReplay(frames, streamMode)
+      };
+    }
+  }
+  return plans;
 }
 
 export function renderPresentationHtml(stage: StageDocument, renderer: RendererPlugin): string {
-  const annotations = new Map(stage.annotations.map((annotation) => [annotation.evidenceAnchor, annotation]));
-  const activities = stage.activities.map((activity, index) => activityHtml(activity, index, annotations.get(activity.evidenceAnchor)?.note)).join("\n");
-  const css = safeCss(renderer.css);
-  const canAutoReplay = stage.activities.length > 1 && stage.activities.every((activity) => Boolean(activity.timestamp) || Boolean(activity.deliveryTrace?.every((chunk) => chunk.timestamp || chunk.offsetMs !== undefined)));
+  const { javascript: _javascript, ...inertRenderer } = renderer;
+  const stageSource = buildStageSource({ ...inertRenderer, css: safeCss(renderer.css) });
+  const plans = replayPlans(stage);
+  const recordedAvailable = stage.fidelity.deliveryTraces;
+  const title = stage.title ?? "Untitled Journey";
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; media-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'; navigate-to 'none';"><title>${escapeHtml(stage.title ?? "AgentJourney presentation")}</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; media-src 'none'; frame-src 'self' data: blob:; child-src 'self' data: blob:; object-src 'none'; form-action 'none'; base-uri 'none';"><title>${escapeHtml(title)}</title>
 <style>
-:root{--stage-bg:#101214;--stage-panel:#171a1e;--stage-border:#2a2f36;--stage-text:#e8eaed;--stage-muted:#9299a2;--stage-accent:#7dd3fc;--stage-human:#172b35;--stage-tool:#111c24;--stage-reason:#211c2e;--stage-radius:10px;--stage-font:system-ui,sans-serif;--stage-mono:ui-monospace,monospace}${css}
-*{box-sizing:border-box}body{margin:0;background:var(--stage-bg);color:var(--stage-text);font-family:var(--stage-font)}nav{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid var(--stage-border);background:color-mix(in srgb,var(--stage-bg) 92%,transparent)}nav strong{margin-right:auto}nav button,nav select{border:1px solid var(--stage-border);background:var(--stage-panel);color:var(--stage-text);border-radius:6px;padding:6px 9px}nav input[type=range]{width:min(360px,35vw);accent-color:var(--stage-accent)}main{width:min(900px,calc(100% - 30px));margin:40px auto 100px}.intro{margin-bottom:28px}.intro h1{font-size:30px;margin:0}.intro p{color:var(--stage-muted)}.activity{margin:10px 0;padding:14px;border:1px solid var(--stage-border);border-radius:var(--stage-radius);background:var(--stage-panel)}.activity[data-kind=human-input]{background:var(--stage-human)}.activity[data-kind=tool-invocation],.activity[data-kind=tool-result]{background:var(--stage-tool)}.activity[data-kind=reasoning],.activity[data-kind=context-injection]{background:var(--stage-reason)}.activity[data-thread]:not([data-thread=main]){margin-left:28px;border-left:3px solid var(--stage-accent)}.activity header{display:flex;gap:8px;align-items:center;color:var(--stage-muted);font:10px var(--stage-mono);text-transform:uppercase}.activity header strong{color:var(--stage-accent)}.activity header time{margin-left:auto}.activity header span{border:1px solid var(--stage-border);border-radius:999px;padding:2px 5px}.text{margin-top:10px;white-space:pre-wrap;line-height:1.55}.activity pre{white-space:pre-wrap;overflow:auto;background:rgba(0,0,0,.2);padding:10px}.activity aside{margin-top:10px;padding:8px;border-left:2px solid #fbbf24;color:var(--stage-muted)}.activity footer{margin-top:9px;color:var(--stage-muted);font:9px var(--stage-mono)}.warning{color:${stage.presentation.redacted ? "#6ee7b7" : "#fca5a5"};font-size:10px}@media(max-width:600px){nav{flex-wrap:wrap}.activity[data-thread]:not([data-thread=main]){margin-left:12px}}
+:root{color-scheme:dark;--bg:#090b0c;--panel:#101315;--panel2:#171b1e;--line:#293036;--text:#e8ebed;--dim:#89939a;--accent:#8abeb7;--warning:#fbbf24}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text);font:12px/1.4 ui-monospace,"SFMono-Regular",Cascadia Code,Consolas,monospace}body{display:grid;grid-template-rows:44px minmax(0,1fr) auto}.export-head{display:flex;min-width:0;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--line);background:var(--panel)}.export-head strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.export-head code{color:var(--accent);font-size:10px}.export-head .spacer{flex:1}.badge{padding:4px 6px;border:1px solid #285a49;border-radius:2px;background:#10231c;color:#6ee7b7;font-size:9px}.badge.unsafe{border-color:#773b43;background:#28161a;color:#fca5a5}.stage-wrap{min-height:0;background:#292c33}.stage-wrap iframe{display:block;width:100%;height:100%;border:0;background:#292c33}.transport{display:flex;min-width:0;align-items:center;gap:6px;overflow-x:auto;padding:8px 10px;border-top:1px solid var(--line);background:var(--panel)}button,select{flex:none;border:1px solid var(--line);border-radius:2px;background:var(--panel2);color:var(--dim);padding:6px 8px;font:inherit}button{cursor:pointer}button:hover:not(:disabled),button.active{border-color:var(--accent);color:var(--text)}button:disabled,select:disabled{opacity:.4;cursor:not-allowed}.transport input[type=range]{min-width:130px;flex:1;accent-color:var(--accent)}.transport output{min-width:72px;color:var(--accent);font-size:10px}.transport small{min-width:180px;color:var(--dim);font-size:9px;text-align:right}.transport label{display:flex;align-items:center;gap:4px;color:var(--dim);font-size:9px}.hidden{display:none!important}@media(max-width:760px){body{grid-template-rows:auto minmax(0,1fr) auto}.export-head{min-height:44px;flex-wrap:wrap;padding:7px 10px}.export-head .spacer{display:none}.transport{flex-wrap:wrap}.transport input[type=range]{order:20;flex-basis:100%}.transport small{min-width:0;flex:1;text-align:left}}
 </style></head><body>
-<nav><strong>AgentJourney · ${escapeHtml(renderer.manifest.displayName)}</strong><span class="warning">${stage.presentation.redacted ? "Presentation redaction enabled" : "UNREDACTED EXPORT"}</span><button id="review">Review</button><button id="play"${canAutoReplay ? "" : " disabled title=\"Timing is not fully evidenced; use the slider to step manually\""}>${canAutoReplay ? "Replay" : "Step only"}</button><input id="range" type="range" min="0" max="${Math.max(0, stage.activities.length - 1)}" value="${Math.max(0, stage.activities.length - 1)}"><span id="count">${stage.activities.length}/${stage.activities.length}</span></nav>
-<main><section class="intro"><h1>${escapeHtml(stage.title ?? "Untitled Journey")}</h1><p>${escapeHtml(stage.sourceAgent)}${stage.sourceAgentVersion ? ` · ${escapeHtml(stage.sourceAgentVersion)}` : ""} · ${stage.coverageSummary.sourceRecords} source records · ${stage.activities.length} activities</p></section>${activities}</main>
+<header class="export-head"><code>AgentJourney</code><strong>${escapeHtml(title)}</strong><span class="spacer"></span><span>${escapeHtml(renderer.manifest.displayName)}</span><span class="badge${stage.presentation.redacted ? "" : " unsafe"}">${stage.presentation.redacted ? "Presentation redaction enabled" : "UNREDACTED EXPORT"}</span></header>
+<main class="stage-wrap"><iframe id="agentjourney-export-stage" title="${escapeHtml(renderer.manifest.displayName)} Journey Stage" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe></main>
+<footer class="transport">
+<button id="review" class="active">Review</button><button id="replay">Replay</button><button id="pause" disabled>Ⅱ</button>
+<input id="range" aria-label="Replay playhead" type="range" min="0" max="0" value="0"><output id="count">Review</output>
+<label>content <select id="stream"><option value="events">Event steps</option><option value="recorded"${recordedAvailable ? "" : " disabled"}>Recorded stream${recordedAvailable ? "" : " · unavailable"}</option><option value="simulated">Simulated TUI stream</option></select></label>
+<label>prompt <select id="prompt"><option value="instant">Instant</option><option value="typed" selected>Simulated typing/paste</option></select></label>
+<label>timeline <select id="timeline-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+<label id="stream-speed-wrap" class="hidden">stream <select id="stream-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option><option value="16">16×</option></select></label>
+<label id="typing-speed-wrap">typing <select id="typing-speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+<small id="fidelity">full Review</small>
+</footer>
 <script>
-const items=[...document.querySelectorAll('.activity')],range=document.getElementById('range'),count=document.getElementById('count');let timer;
-function reveal(index){items.forEach((item,i)=>item.hidden=i>index);range.value=String(index);count.textContent=(index+1)+'/'+items.length}
-document.getElementById('review').onclick=()=>{clearInterval(timer);reveal(items.length-1)};
-document.getElementById('play').onclick=()=>{if(document.getElementById('play').disabled)return;clearInterval(timer);let i=0;reveal(i);timer=setInterval(()=>{i+=1;if(i>=items.length){clearInterval(timer);return}reveal(i)},500)};
-range.oninput=()=>{clearInterval(timer);reveal(Number(range.value))};
+const stageDocument=${scriptJson(stage)};
+const replayPlans=${scriptJson(plans)};
+const stageSource=${scriptJson(stageSource)};
+const frame=document.getElementById('agentjourney-export-stage');
+const reviewButton=document.getElementById('review'),replayButton=document.getElementById('replay'),pauseButton=document.getElementById('pause'),range=document.getElementById('range'),count=document.getElementById('count'),stream=document.getElementById('stream'),promptMode=document.getElementById('prompt'),timelineSpeed=document.getElementById('timeline-speed'),streamSpeed=document.getElementById('stream-speed'),typingSpeed=document.getElementById('typing-speed'),streamSpeedWrap=document.getElementById('stream-speed-wrap'),typingSpeedWrap=document.getElementById('typing-speed-wrap'),fidelity=document.getElementById('fidelity');
+let port,index=0,playing=false,reviewing=true,timer,presentedAt=0,lastFrame;
+function key(){return stream.value+':'+promptMode.value}
+function plan(){return replayPlans[key()]||{frames:[],canAutoPlay:false}}
+function currentFrame(){return plan().frames[index]}
+function inputDraft(value){if(value.simulatedInputTextLength===undefined)return undefined;const activity=stageDocument.activities.find(item=>item.id===value.activityId);if(!activity||typeof activity.text!=='string')return undefined;return{activityId:activity.id,text:[...activity.text].slice(0,value.simulatedInputTextLength).join('')}}
+function documentAt(value){const draft=inputDraft(value);return{...stageDocument,presentation:{...stageDocument.presentation,view:'replay',streamMode:stream.value,playheadActivityId:value.activityId,...(value.deliveryChunkIndex!==undefined?{playheadDeliveryChunk:value.deliveryChunkIndex}:{}),...(value.simulatedTextLength!==undefined?{playheadSimulatedTextLength:value.simulatedTextLength}:{}),...(draft?{simulatedInputDraft:draft}:{})}}}
+function sendDocument(documentValue){lastFrame=undefined;port?.postMessage({type:'render',document:documentValue})}
+function streamedText(value){const activity=stageDocument.activities.find(item=>item.id===value.activityId);if(!activity)return'';if(value.simulatedTextLength!==undefined&&typeof activity.text==='string')return[...activity.text].slice(0,value.simulatedTextLength).join('');if(value.deliveryChunkIndex!==undefined&&activity.deliveryTrace)return activity.deliveryTrace.slice(0,value.deliveryChunkIndex+1).map(chunk=>chunk.text).join('');return activity.text||''}
+function sendFrame(value){const previous=lastFrame,draft=inputDraft(value);if(previous&&previous.activityId===value.activityId){if(draft&&previous.simulatedInputTextLength!==undefined){port?.postMessage({type:'input-draft',activityId:draft.activityId,text:draft.text});lastFrame=value;return}const response=value.simulatedTextLength!==undefined||value.deliveryChunkIndex!==undefined;const previousResponse=previous.simulatedTextLength!==undefined||previous.deliveryChunkIndex!==undefined;if(response&&previousResponse){port?.postMessage({type:'activity-text',activityId:value.activityId,text:streamedText(value)});lastFrame=value;return}}port?.postMessage({type:'render',document:documentAt(value)});lastFrame=value}
+function frameLabel(value){if(!value)return'manual';if(value.simulatedInputPaste)return'SIMULATED prompt paste';if(value.simulatedInputTextLength!==undefined)return'SIMULATED prompt typing';if(value.streamSource==='simulated')return'SIMULATED cadence';if(value.deliveryChunkIndex!==undefined)return'recorded chunk '+(value.deliveryChunkIndex+1);if(value.timing==='evidenced')return'evidenced timestamp';if(value.timing==='source-order')return'untimed · source-order placement';return'manual step'}
+function updateControls(){const activePlan=plan(),value=currentFrame();range.max=String(Math.max(0,activePlan.frames.length-1));range.value=String(Math.min(index,Math.max(0,activePlan.frames.length-1)));count.textContent=reviewing?'Review':(activePlan.frames.length?index+1:0)+'/'+activePlan.frames.length;fidelity.textContent=reviewing?'full Review':frameLabel(value);reviewButton.classList.toggle('active',reviewing);replayButton.classList.toggle('active',!reviewing);replayButton.disabled=!activePlan.canAutoPlay;pauseButton.disabled=reviewing||!activePlan.canAutoPlay;pauseButton.textContent=playing?'Ⅱ':'▶';streamSpeedWrap.classList.toggle('hidden',stream.value==='events');typingSpeedWrap.classList.toggle('hidden',promptMode.value==='instant')}
+function showReview(){stop();reviewing=true;index=Math.max(0,plan().frames.length-1);sendDocument({...stageDocument,presentation:{...stageDocument.presentation,view:'review',streamMode:stream.value}});updateControls()}
+function showFrame(nextIndex){const frames=plan().frames;if(!frames.length)return;reviewing=false;index=Math.max(0,Math.min(nextIndex,frames.length-1));sendFrame(frames[index]);updateControls()}
+function delay(current,next){const within=current.activityId===next.activityId&&(next.streamSource==='recorded'||next.streamSource==='simulated');const promptFrame=within&&(next.simulatedInputTextLength!==undefined||next.inputSubmitted===true);const paste=promptFrame&&(current.simulatedInputPaste===true||next.simulatedInputPaste===true);const selected=paste?1:promptFrame?Number(typingSpeed.value):within?Number(streamSpeed.value):Number(timelineSpeed.value);const minimum=next.inputSubmitted?180:promptFrame?15:within?4:next.timing==='source-order'?12:16;return Math.max(minimum,Math.min(5000,(next.displayOffsetMs-current.displayOffsetMs)/(selected>0?selected:1)))}
+function stop(){playing=false;clearTimeout(timer);updateControls()}
+function schedule(){if(!playing)return;const frames=plan().frames;if(index>=frames.length-1){stop();return}const base=delay(frames[index],frames[index+1]);const gap=index===0?Math.max(400,base):base;const target=presentedAt+gap;timer=setTimeout(()=>{const fired=performance.now();let next=index+1,shownAt=target;while(next<frames.length-1){const catchUp=delay(frames[next],frames[next+1]);if(shownAt+catchUp>fired)break;shownAt+=catchUp;next+=1}presentedAt=shownAt;showFrame(next);schedule()},Math.max(0,target-performance.now()))}
+function start(){const activePlan=plan();if(!activePlan.frames.length)return;reviewing=false;index=0;showFrame(0);if(!activePlan.canAutoPlay){playing=false;updateControls();return}playing=true;presentedAt=performance.now();updateControls();schedule()}
+function togglePause(){if(reviewing||!plan().canAutoPlay)return;if(playing){stop();return}playing=true;presentedAt=performance.now();updateControls();schedule()}
+function resetPlan(){stop();index=0;showReview()}
+reviewButton.onclick=showReview;replayButton.onclick=start;pauseButton.onclick=togglePause;range.oninput=()=>{stop();showFrame(Number(range.value))};stream.onchange=resetPlan;promptMode.onchange=resetPlan;timelineSpeed.onchange=()=>{if(playing){presentedAt=performance.now();clearTimeout(timer);schedule()}};streamSpeed.onchange=timelineSpeed.onchange;typingSpeed.onchange=timelineSpeed.onchange;
+frame.onload=()=>{const channel=new MessageChannel();port=channel.port1;port.onmessage=event=>{const intent=event.data?.intent;if(event.data?.type==='intent'&&intent?.type==='seek-activity'){const target=plan().frames.findIndex(value=>value.activityId===intent.activityId);if(target>=0){stop();showFrame(target)}}};port.start();frame.contentWindow.postMessage({type:'agentjourney:init'},'*',[channel.port2]);showReview();document.documentElement.dataset.exportReady='true'};
+frame.srcdoc=stageSource;
 </script></body></html>`;
 }

@@ -1,0 +1,51 @@
+.agentjourney-html-export-content {
+  display: grid;
+  min-height: 0;
+  height: min(72dvh, 720px);
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+
+.agentjourney-html-export-options {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 16px;
+  overflow: auto;
+  padding: 18px;
+  border-right: 1px solid #293036;
+  background: #101315;
+}
+
+.agentjourney-html-export-preview {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: stretch;
+  overflow: hidden;
+  background: #090b0c;
+}
+
+.agentjourney-html-export-preview > iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #090b0c;
+}
+
+.agentjourney-html-export-preview > .astryx-empty-state {
+  align-self: center;
+}
+
+@media (max-width: 800px) {
+  .agentjourney-html-export-content {
+    height: 74dvh;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(300px, 1fr);
+  }
+
+  .agentjourney-html-export-options {
+    max-height: 270px;
+    border-right: 0;
+    border-bottom: 1px solid #293036;
+  }
+}

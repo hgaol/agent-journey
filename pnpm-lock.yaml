@@ -248,6 +248,9 @@ importers:
 
   packages/portability:
     dependencies:
+      '@agentjourney/activity-graph':
+        specifier: workspace:*
+        version: link:../activity-graph
       '@agentjourney/contracts':
         specifier: workspace:*
         version: link:../contracts

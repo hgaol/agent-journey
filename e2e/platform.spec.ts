@@ -509,6 +509,46 @@ test("exports a configurable source-native Replay as MP4", async ({ page }) => {
   expect(bytes.subarray(4, 8).toString("ascii")).toBe("ftyp");
 });
 
+test("previews and downloads the same interactive source-native HTML export", async ({ page }) => {
+  let exportRequests = 0;
+  page.on("response", (response) => {
+    if (response.url().includes("/export/html")) exportRequests += 1;
+  });
+  await page.goto("/");
+  await page.getByText("Read the greeting file.", { exact: true }).click();
+  await page.getByLabel("Renderer").selectOption("builtin.pi");
+  await page.getByRole("button", { name: "export html" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Export interactive HTML" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Generate preview" }).click();
+  const previewElement = dialog.locator('iframe[title="Interactive HTML export preview"]');
+  await expect(previewElement).toBeVisible();
+  const preview = dialog.frameLocator('iframe[title="Interactive HTML export preview"]');
+  await expect(preview.locator("html")).toHaveAttribute("data-export-ready", "true");
+  await expect(preview.getByRole("button", { name: "Replay" })).toBeVisible();
+  await expect(preview.getByLabel("Replay playhead")).toBeVisible();
+  const exportedStage = preview.frameLocator("#agentjourney-export-stage");
+  await expect(exportedStage.locator(".stage-title")).toHaveText("Pi");
+  await expect(exportedStage.locator(".stage-native-composer")).toBeVisible();
+  await expect(exportedStage.locator(".activity")).toHaveCount(12);
+
+  await preview.locator("#prompt").selectOption("instant");
+  await preview.getByRole("button", { name: "Replay" }).click();
+  await expect(exportedStage.locator(".activity")).toHaveCount(1);
+
+  const downloadPromise = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Download HTML" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.html$/u);
+  const downloadedPath = await download.path();
+  expect(downloadedPath).not.toBeNull();
+  const html = await readFile(downloadedPath!, "utf8");
+  expect(html).toContain('id="agentjourney-export-stage"');
+  expect(html).toContain("Simulated TUI stream");
+  expect(exportRequests).toBe(1);
+});
+
 test("terminal transcript fills the available center pane", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Read the greeting file.").click();

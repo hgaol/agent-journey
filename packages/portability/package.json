@@ -7,6 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@agentjourney/activity-graph": "workspace:*",
     "@agentjourney/contracts": "workspace:*",
     "@agentjourney/plugin-sdk": "workspace:*"
   },

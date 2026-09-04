@@ -10,9 +10,12 @@ const stage: StageDocument = {
   interpretationId: "interpretation",
   sourceAgent: "pi",
   title: "<script>bad</script>",
-  activities: [{ id: "a", kind: "agent-output", evidenceAnchor: "file#L1", threadId: "main", sourceOrder: 1, text: "<img src=x onerror=bad>" }],
+  activities: [
+    { id: "prompt", kind: "human-input", evidenceAnchor: "file#L1", threadId: "main", sourceOrder: 1, timestamp: "2026-01-01T00:00:00.000Z", text: "Show the TUI" },
+    { id: "a", kind: "agent-output", evidenceAnchor: "file#L2", threadId: "main", sourceOrder: 2, timestamp: "2026-01-01T00:00:01.000Z", text: "<img src=x onerror=bad>" }
+  ],
   threads: [{ id: "main" }],
-  turns: [{ id: "turn", activityIds: ["a"], boundaryProvenance: "inferred" }],
+  turns: [{ id: "turn", activityIds: ["prompt", "a"], boundaryProvenance: "inferred" }],
   annotations: [],
   fidelity: { contentKinds: ["agent-output"], timedKinds: [], deliveryTraces: false, agentThreads: false, causalLinks: false, terminalStream: false, knownGaps: [] },
   sensitiveFindingCount: 0,
@@ -29,9 +32,15 @@ describe("Presentation HTML", () => {
   it("escapes content, strips external CSS, and excludes plugin JavaScript", () => {
     const html = renderPresentationHtml(stage, renderer);
     expect(html).toContain("&lt;script&gt;bad&lt;/script&gt;");
-    expect(html).toContain("&lt;img src=x onerror=bad&gt;");
+    expect(html).toContain("\\u003cimg src=x onerror=bad>");
+    expect(html).not.toContain("<img src=x onerror=bad>");
     expect(html).not.toContain("evil.test");
     expect(html).not.toContain("PWNED");
     expect(html).toContain("Presentation redaction enabled");
+    expect(html).toContain('id="agentjourney-export-stage"');
+    expect(html).toContain("stage-native-composer");
+    expect(html).toContain("Simulated TUI stream");
+    expect(html).toContain("simulatedInputTextLength");
+    expect(html).toContain("connect-src 'none'");
   });
 });

@@ -12,6 +12,7 @@ import { api, saveDownload } from "../api.js";
 import { AnnotationDialog } from "../components/AnnotationDialog.js";
 import { CoveragePanel } from "../components/CoveragePanel.js";
 import { EvidenceInspector } from "../components/EvidenceInspector.js";
+import { HtmlExportDialog } from "../components/HtmlExportDialog.js";
 import { OverlayEditor } from "../components/OverlayEditor.js";
 import { ReplayTimeline } from "../components/ReplayTimeline.js";
 import { VideoExportDialog } from "../components/VideoExportDialog.js";
@@ -210,6 +211,7 @@ export function JourneyPage(): React.ReactNode {
   const [showCoverage, setShowCoverage] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showVideoExport, setShowVideoExport] = useState(false);
+  const [showHtmlExport, setShowHtmlExport] = useState(false);
   const replay = useReplay(
     journey.data?.stage.activities ?? [],
     streamMode,
@@ -629,17 +631,7 @@ export function JourneyPage(): React.ReactNode {
             <button onClick={() => setShowVideoExport(true)}>
               export mp4
             </button>
-            <button
-              onClick={() => void api.exportPresentation(
-                journeyId,
-                renderer.manifest.id,
-                {
-                  revisionId: detail.revisionId,
-                  interpretationId: detail.interpretationId,
-                  reveal
-                }
-              ).then(saveDownload)}
-            >
+            <button onClick={() => setShowHtmlExport(true)}>
               export html
             </button>
             <details>
@@ -858,6 +850,29 @@ export function JourneyPage(): React.ReactNode {
           journey={detail}
           projects={projects.data ?? []}
           onClose={() => setShowOverlay(false)}
+        />
+      )}
+      {showHtmlExport && (
+        <HtmlExportDialog
+          rendererId={renderer.javascript
+            ? rendererForSourceAgent(detail.summary.sourceAgent).manifest.id
+            : renderer.manifest.id}
+          renderers={renderers.map((candidate) => ({
+            id: candidate.manifest.id,
+            name: candidate.manifest.displayName,
+            stylePack: !candidate.javascript
+          }))}
+          reveal={reveal}
+          onClose={() => setShowHtmlExport(false)}
+          onGenerate={(selectedRendererId, selectedReveal) => api.exportPresentation(
+            journeyId,
+            selectedRendererId,
+            {
+              revisionId: detail.revisionId,
+              interpretationId: detail.interpretationId,
+              reveal: selectedReveal
+            }
+          )}
         />
       )}
       {showVideoExport && (
