@@ -1,6 +1,16 @@
 import { readFile } from "node:fs/promises";
-import { expect, test, type FrameLocator, type Page } from "@playwright/test";
+import { expect, test, type FrameLocator, type Locator, type Page } from "@playwright/test";
 import { fixturePath } from "@agentjourney/test-fixtures";
+
+async function selectAstryxOption(
+  page: Page,
+  scope: Locator,
+  label: string,
+  optionName: string
+): Promise<void> {
+  await scope.getByRole("combobox", { name: label }).click();
+  await page.getByRole("option", { name: optionName, exact: true }).click();
+}
 
 async function expectNativeChromeDocked(page: Page, stage: FrameLocator): Promise<void> {
   const frameBox = await page.locator("iframe.journey-stage").boundingBox();
@@ -13,8 +23,12 @@ async function expectNativeChromeDocked(page: Page, stage: FrameLocator): Promis
 test("opening the Vite URL directly completes local authorization", async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
+  const consoleErrors: string[] = [];
+  page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
+  page.on("pageerror", (error) => consoleErrors.push(error.message));
   await page.goto("http://127.0.0.1:5173/");
-  await expect(page.getByRole("heading", { name: "Revisit how the work unfolded." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Revisit how the work unfolded." })).toBeVisible({ timeout: 15_000 });
+  expect(consoleErrors.filter((message) => !message.includes("401 (Unauthorized)"))).toEqual([]);
   await context.close();
 });
 
@@ -51,7 +65,7 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
 });
 
-test("uses a scoped Astryx form dialog for Review annotations", async ({ page }) => {
+test("uses an Astryx form dialog for Review annotations", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Read the greeting file.", { exact: true }).click();
   await page.getByLabel("Renderer").selectOption("builtin.pi");
@@ -63,7 +77,8 @@ test("uses a scoped Astryx form dialog for Review annotations", async ({ page })
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveClass(/astryx-dialog/u);
   await expect(page.getByRole("heading", { name: "Review annotation" })).toBeFocused();
-  await expect(page.locator("html")).not.toHaveAttribute("data-astryx-theme");
+  await expect(page.locator("html")).toHaveAttribute("data-astryx-theme", "neutral");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.setViewportSize({ width: 390, height: 700 });
   const narrowDialogBox = await dialog.boundingBox();
   expect(narrowDialogBox).not.toBeNull();
@@ -81,6 +96,62 @@ test("uses a scoped Astryx form dialog for Review annotations", async ({ page })
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
+});
+
+test("uses Astryx across shell controls and forensic dialog shells", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveAttribute("data-astryx-theme", "neutral");
+  const sourceFilter = page.getByRole("combobox", { name: "Source" });
+  await sourceFilter.click();
+  await page.getByRole("option", { name: "Pi", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Clear filters" })).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.getByRole("combobox", { name: "From" })).toBeVisible();
+
+  await page.getByText("Read the greeting file.", { exact: true }).click();
+  await page.getByRole("button", { name: "coverage / fidelity" }).click();
+  const coverage = page.getByRole("dialog", { name: "Coverage & fidelity" });
+  await expect(coverage).toHaveClass(/agentjourney-astryx-dialog/u);
+  await page.keyboard.press("Escape");
+  await expect(coverage).toBeHidden();
+
+  await page.getByRole("button", { name: "Evidence" }).click();
+  const evidence = page.getByRole("dialog", { name: "Source Evidence inspector" });
+  await expect(evidence).toHaveClass(/agentjourney-astryx-dialog/u);
+  await evidence.getByRole("button", { name: "Reveal" }).click();
+  await expect(evidence.getByText("Reveal unredacted Source Evidence?")).toBeVisible();
+  await evidence.getByRole("button", { name: "Cancel" }).click();
+  await page.keyboard.press("Escape");
+  await expect(evidence).toBeHidden();
+
+  await page.getByRole("button", { name: "review overlay" }).click();
+  const overlay = page.getByRole("dialog", { name: "Organize this Journey" });
+  await expect(overlay.getByRole("textbox", { name: "Display title" })).toBeVisible();
+  await expect(overlay.getByRole("combobox", { name: "Project" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(overlay).toBeHidden();
+
+  await page.getByRole("button", { name: "MASKED" }).click();
+  const reveal = page.getByRole("alertdialog", { name: "Reveal unredacted Canonical Activity?" });
+  await expect(reveal.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(reveal).toBeHidden();
+  await expect(page.getByRole("button", { name: "MASKED" })).toBeVisible();
+});
+
+test("keeps Astryx Platform Shell controls inside a narrow viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("combobox", { name: "Source" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  await page.getByRole("link", { name: "Sources" }).click();
+  await expect(page.getByRole("button", { name: "Choose directory" })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+
+  await page.getByRole("link", { name: "Settings" }).click();
+  await expect(page.locator(".astryx-file-input")).toHaveCount(2);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
 test("Pi renderer follows its native TUI visual hierarchy", async ({ page }) => {
@@ -401,25 +472,27 @@ test("exports a configurable source-native Replay as MP4", async ({ page }) => {
   await page.getByRole("button", { name: "export mp4" }).click();
   const dialog = page.getByRole("dialog", { name: "Export Replay as MP4" });
   await expect(dialog).toBeVisible();
-  const renderingEngine = dialog.getByLabel("Rendering engine");
-  await expect(renderingEngine.locator('option[value="edge"]')).toContainText("Microsoft Edge");
-  await expect(renderingEngine.locator('option[value="webkit"]')).toContainText("Safari-compatible");
-  await renderingEngine.selectOption("edge");
-  await expect(renderingEngine).toHaveValue("edge");
-  await renderingEngine.selectOption("auto");
-  await dialog.getByLabel("Quality").selectOption("720p");
-  await dialog.getByLabel("Playback speed").selectOption("8");
-  await dialog.getByLabel("Frame rate").selectOption("30");
-  await dialog.getByLabel("Replay content").selectOption("events");
-  await dialog.getByLabel("Simulate user typing before prompt submission").check();
-  await dialog.getByLabel("Typing speed").selectOption("2");
-  await expect(dialog.getByLabel("Typing speed")).toHaveValue("2");
+  const renderingEngine = dialog.getByRole("combobox", { name: "Rendering engine" });
+  await renderingEngine.click();
+  await expect(page.getByRole("option", { name: /Microsoft Edge/u })).toBeVisible();
+  await expect(page.getByRole("option", { name: /Safari-compatible/u })).toBeVisible();
+  await page.getByRole("option", { name: /Microsoft Edge/u }).click();
+  await expect(renderingEngine).toContainText("Microsoft Edge");
+  await renderingEngine.click();
+  await page.getByRole("option", { name: /Auto · Chromium/u }).click();
+  await selectAstryxOption(page, dialog, "Quality", "Standard · 720p");
+  await selectAstryxOption(page, dialog, "Playback speed", "8×");
+  await selectAstryxOption(page, dialog, "Frame rate", "30 fps");
+  await selectAstryxOption(page, dialog, "Replay content", "Event steps");
+  await dialog.getByRole("checkbox", { name: "Simulate user typing before prompt submission" }).check();
+  await selectAstryxOption(page, dialog, "Typing speed", "Fast · 2×");
+  await expect(dialog.getByRole("combobox", { name: "Typing speed" })).toContainText("Fast · 2×");
   const downloadPromise = page.waitForEvent("download", { timeout: 60_000 });
   await dialog.getByRole("button", { name: "Export MP4" }).click();
   const progress = dialog.getByRole("progressbar", { name: "MP4 export progress" });
   await expect(progress).toBeVisible();
   await expect.poll(async () => Number(await progress.getAttribute("aria-valuenow"))).toBeGreaterThan(0);
-  await expect(progress).toContainText(/Rendering frame|Encoding H\.264|Finalizing/u);
+  await expect(dialog).toContainText(/Rendering frame|Encoding H\.264|Finalizing/u);
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/720p-8x\.mp4$/u);
   const filePath = await download.path();
@@ -450,8 +523,10 @@ test("shows date, size, and turn estimates in source scan previews", async ({ pa
   const piSource = page.locator(".source-card").filter({
     has: page.getByRole("heading", { name: "Pi", exact: true })
   });
-  page.once("dialog", (dialog) => dialog.accept(fixturePath("pi")));
   await piSource.getByRole("button", { name: "Choose root" }).click();
+  const rootDialog = page.getByRole("dialog", { name: "Choose Source Root" });
+  await rootDialog.getByRole("textbox", { name: "Absolute Source Root path" }).fill(fixturePath("pi"));
+  await rootDialog.getByRole("button", { name: "Approve Source Root" }).click();
   await piSource.getByRole("button", { name: "Preview scan" }).click();
   const candidate = piSource.locator(".discovery-candidate");
   await expect(candidate.locator("time")).toHaveAttribute("datetime", "2026-01-01T10:00:00.000Z");
@@ -470,4 +545,12 @@ test("shows source consent and archive operations", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Archive operations" })).toBeVisible();
   await expect(page.getByText("Journey Package import")).toBeVisible();
   await expect(page.getByText("Local Plugins")).toBeVisible();
+  await expect(page.locator(".astryx-file-input")).toHaveCount(2);
+  await page.getByRole("button", { name: "Rotate secret" }).click();
+  const confirmation = page.getByRole("alertdialog", { name: "Rotate the local authorization secret?" });
+  await expect(confirmation.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(confirmation).toBeHidden();
+  await page.getByRole("button", { name: "Run automatic cycle" }).click();
+  await expect(page.getByLabel("Notifications").getByText("Automatic Capture Cycle complete", { exact: true })).toBeVisible();
 });

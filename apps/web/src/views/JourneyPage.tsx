@@ -1,26 +1,25 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Banner } from "@astryxdesign/core/Banner";
+import { useToast } from "@astryxdesign/core/Toast";
 import { builtInStylePacks, rendererForSourceAgent } from "@agentjourney/builtin-renderers";
 import type { ActivityDocument, StageDocument } from "@agentjourney/contracts";
 import type { RendererIntent } from "@agentjourney/plugin-sdk";
 import type { ReplayStreamMode } from "@agentjourney/activity-graph";
 import { projectStageDocument } from "@agentjourney/portability";
 import { api, saveDownload } from "../api.js";
+import { AnnotationDialog } from "../components/AnnotationDialog.js";
 import { CoveragePanel } from "../components/CoveragePanel.js";
 import { EvidenceInspector } from "../components/EvidenceInspector.js";
 import { OverlayEditor } from "../components/OverlayEditor.js";
 import { ReplayTimeline } from "../components/ReplayTimeline.js";
 import { VideoExportDialog } from "../components/VideoExportDialog.js";
 import { StageFrame } from "../components/StageFrame.js";
+import { useConfirmation } from "../hooks/useConfirmation.js";
 import { useReplay } from "../hooks/useReplay.js";
 import { shortId, sourceLabel } from "../source-brand.js";
 import "../terminal-journey.css";
-
-const AnnotationDialog = lazy(async () => {
-  const module = await import("../components/AnnotationDialog.js");
-  return { default: module.AnnotationDialog };
-});
 
 function sourceGlyph(sourceAgent: string): string {
   if (sourceAgent === "claude-code") return "✻";
@@ -181,6 +180,8 @@ export function JourneyPage(): React.ReactNode {
   const { journeyId } = useParams({ from: "/journeys/$journeyId" });
   const navigate = useNavigate();
   const client = useQueryClient();
+  const confirmation = useConfirmation();
+  const showToast = useToast();
   const [revisionId, setRevisionId] = useState<string>();
   const [interpretationId, setInterpretationId] = useState<string>();
   const [reveal, setReveal] = useState(false);
@@ -346,6 +347,7 @@ export function JourneyPage(): React.ReactNode {
     mutationFn: () => api.reinterpretJourney(journeyId, journey.data!.revisionId),
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ["journey", journeyId] });
+      showToast({ body: "Journey reinterpreted", uniqueID: "journey-reinterpreted" });
     }
   });
 
@@ -353,6 +355,7 @@ export function JourneyPage(): React.ReactNode {
     mutationFn: (exclude: boolean) => api.deleteJourney(journeyId, exclude),
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ["journeys"] });
+      showToast({ body: "Journey deleted", uniqueID: "journey-deleted" });
       await navigate({ to: "/" });
     }
   });
@@ -392,7 +395,7 @@ export function JourneyPage(): React.ReactNode {
     return <main className="terminal-route-loading"><span>▋</span> loading Journey…</main>;
   }
   if (journey.error || !journey.data) {
-    return <main className="page"><div className="error-banner">{journey.error?.message ?? "Journey not found"}</div></main>;
+    return <main className="page"><Banner status="error" title="Journey unavailable" description={journey.error?.message ?? "Journey not found"} collapsible={false} /></main>;
   }
 
   const detail = journey.data;
@@ -458,9 +461,15 @@ export function JourneyPage(): React.ReactNode {
         <button
           className={reveal ? "terminal-mask unsafe" : "terminal-mask"}
           onClick={() => {
-            if (reveal || window.confirm("Reveal unredacted Canonical Activity?")) {
-              setReveal((value) => !value);
+            if (reveal) {
+              setReveal(false);
+              return;
             }
+            void confirmation.confirm({
+              title: "Reveal unredacted Canonical Activity?",
+              description: "The Stage may display credentials or private source code from the local archive.",
+              actionLabel: "Reveal activity"
+            }).then((confirmed) => { if (confirmed) setReveal(true); });
           }}
         >
           {reveal ? "UNREDACTED" : "MASKED"}
@@ -607,13 +616,13 @@ export function JourneyPage(): React.ReactNode {
               <button onClick={() => setShowComparison((value) => !value)}>compare history</button>
             )}
             <button
-              onClick={() => {
-                if (window.confirm(
-                  "Export an unencrypted, lossless Journey Package? It may contain credentials and private source code."
-                )) {
-                  void api.exportJourneyPackage(journeyId).then(saveDownload);
-                }
-              }}
+              onClick={() => void confirmation.confirm({
+                title: "Export an unencrypted Journey Package?",
+                description: "The lossless package may contain credentials, private source code, and exact Source Evidence.",
+                actionLabel: "Export package"
+              }).then((confirmed) => {
+                if (confirmed) void api.exportJourneyPackage(journeyId).then(saveDownload);
+              })}
             >
               export package
             </button>
@@ -637,21 +646,21 @@ export function JourneyPage(): React.ReactNode {
               <summary>destructive actions</summary>
               <button
                 className="terminal-danger"
-                onClick={() => {
-                  if (window.confirm("Delete this Journey? A future scan may rediscover it.")) {
-                    deleteJourney.mutate(false);
-                  }
-                }}
+                onClick={() => void confirmation.confirm({
+                  title: "Delete this Journey?",
+                  description: "The archived Journey will be removed. A future scan may rediscover it.",
+                  actionLabel: "Delete Journey"
+                }).then((confirmed) => { if (confirmed) deleteJourney.mutate(false); })}
               >
                 delete only
               </button>
               <button
                 className="terminal-danger"
-                onClick={() => {
-                  if (window.confirm("Delete this Journey and exclude it from future capture?")) {
-                    deleteJourney.mutate(true);
-                  }
-                }}
+                onClick={() => void confirmation.confirm({
+                  title: "Delete and exclude this Journey?",
+                  description: "The Journey will be removed and its Native Session Identity excluded from future capture until you reverse the exclusion.",
+                  actionLabel: "Delete and exclude"
+                }).then((confirmed) => { if (confirmed) deleteJourney.mutate(true); })}
               >
                 delete + exclude
               </button>
@@ -824,6 +833,7 @@ export function JourneyPage(): React.ReactNode {
         />
       </footer>
 
+      {confirmation.element}
       {evidenceSelection && (
         <EvidenceInspector
           journey={detail}
@@ -837,13 +847,11 @@ export function JourneyPage(): React.ReactNode {
         />
       )}
       {annotationActivity && (
-        <Suspense fallback={<div className="modal-backdrop"><div className="loading">loading annotation editor…</div></div>}>
-          <AnnotationDialog
-            journey={detail}
-            activity={annotationActivity}
-            onClose={() => setAnnotationActivity(undefined)}
-          />
-        </Suspense>
+        <AnnotationDialog
+          journey={detail}
+          activity={annotationActivity}
+          onClose={() => setAnnotationActivity(undefined)}
+        />
       )}
       {showOverlay && (
         <OverlayEditor

@@ -1,53 +1,3 @@
-/* Astryx proof of concept: scoped to Platform Shell annotation UI only. */
-.agentjourney-astryx-scope {
-  display: contents;
-  color-scheme: dark;
-  --color-background-surface: #101418;
-  --color-background-body: #0b0d0f;
-  --color-background-card: #12161a;
-  --color-background-popover: #171c21;
-  --color-background-muted: #12161a;
-  --color-text-primary: #e8edf2;
-  --color-text-secondary: #8d98a3;
-  --color-accent: #7dd3fc;
-  --color-accent-muted: #172b35;
-  --color-border: #35404a;
-  --color-border-emphasized: #52606c;
-  --font-family-body: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-.agentjourney-astryx-dialog {
-  border: 1px solid #35404a;
-  background: #101418;
-  color: #e8edf2;
-  box-shadow: 0 30px 100px #000;
-  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-.agentjourney-astryx-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px);
-}
-
-.agentjourney-astryx-annotation-form {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-}
-
-.agentjourney-astryx-dialog .astryx-layout-header {
-  padding: 16px 20px;
-}
-
-.agentjourney-astryx-dialog .astryx-layout-content {
-  min-height: 0;
-}
-
-.agentjourney-astryx-dialog .astryx-layout-footer {
-  padding: 14px 20px;
-}
-
 .agentjourney-astryx-annotation-content {
   display: grid;
   gap: 16px;
@@ -73,20 +23,4 @@
   color: #8d98a3;
   font-size: 11px;
   line-height: 1.5;
-}
-
-.agentjourney-astryx-annotation-actions {
-  display: flex;
-  width: 100%;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.agentjourney-astryx-error {
-  padding: 10px 12px;
-  border: 1px solid #713740;
-  border-radius: 8px;
-  background: #271419;
-  color: #fecaca;
-  font-size: 11px;
 }

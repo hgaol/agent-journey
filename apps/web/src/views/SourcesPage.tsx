@@ -1,54 +1,122 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { zipSync } from "fflate";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Button } from "@astryxdesign/core/Button";
+import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
+import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
+import { FileInput } from "@astryxdesign/core/FileInput";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { Selector } from "@astryxdesign/core/Selector";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { useToast } from "@astryxdesign/core/Toast";
 import type { DiscoveredJourneyDocument } from "@agentjourney/contracts";
 import { api } from "../api.js";
+import { useConfirmation } from "../hooks/useConfirmation.js";
+
+interface SourceRootEdit {
+  sourceAgent: string;
+  displayName: string;
+  root: string;
+  scanPolicy: "manual" | "automatic";
+}
+
+function SourceRootDialog(props: {
+  edit: SourceRootEdit;
+  pending: boolean;
+  onClose: () => void;
+  onSave: (root: string) => void;
+}): React.ReactNode {
+  const [root, setRoot] = useState(props.edit.root);
+  const requestClose = (isOpen: boolean): void => {
+    if (!isOpen && !props.pending) props.onClose();
+  };
+  return (
+    <Dialog className="agentjourney-astryx-dialog" isOpen onOpenChange={requestClose} purpose="form" width={560} padding={0}>
+      <form className="agentjourney-astryx-form" onSubmit={(event) => { event.preventDefault(); if (root.trim()) props.onSave(root.trim()); }}>
+        <Layout
+          height="auto"
+          header={<DialogHeader title="Choose Source Root" subtitle={props.edit.displayName} {...(!props.pending ? { onOpenChange: requestClose } : {})} />}
+          content={(
+            <LayoutContent padding={4}>
+              <TextInput
+                label="Absolute Source Root path"
+                value={root}
+                onChange={setRoot}
+                description="AgentJourney receives read-only discovery access to this path."
+                hasAutoFocus
+                width="100%"
+              />
+            </LayoutContent>
+          )}
+          footer={(
+            <LayoutFooter hasDivider>
+              <div className="agentjourney-astryx-actions">
+                <Button label="Cancel" variant="secondary" onClick={() => requestClose(false)} isDisabled={props.pending} />
+                <Button label="Approve Source Root" variant="primary" type="submit" isLoading={props.pending} isDisabled={props.pending || !root.trim()} />
+              </div>
+            </LayoutFooter>
+          )}
+        />
+      </form>
+    </Dialog>
+  );
+}
 
 export function SourcesPage(): React.ReactNode {
   const client = useQueryClient();
+  const confirmation = useConfirmation();
+  const showToast = useToast();
   const sources = useQuery({ queryKey: ["sources"], queryFn: api.listSources });
   const [discoveries, setDiscoveries] = useState<Record<string, DiscoveredJourneyDocument[]>>({});
   const [selectedBySource, setSelectedBySource] = useState<Record<string, string[]>>({});
   const [busySource, setBusySource] = useState<string>();
   const [error, setError] = useState<string>();
   const [importAgent, setImportAgent] = useState("claude-code");
+  const [rawFiles, setRawFiles] = useState<File[]>([]);
+  const [rootEdit, setRootEdit] = useState<SourceRootEdit>();
+  const directoryInputRef = useRef<HTMLInputElement>(null);
 
   const approve = useMutation({
     mutationFn: ({ sourceAgent, root, scanPolicy = "manual" }: { sourceAgent: string; root: string; scanPolicy?: "manual" | "automatic" }) => api.approveSource(sourceAgent, root, scanPolicy),
-    onSuccess: () => client.invalidateQueries({ queryKey: ["sources"] })
+    onSuccess: async () => {
+      setRootEdit(undefined);
+      await client.invalidateQueries({ queryKey: ["sources"] });
+      showToast({ body: "Source Root approved", uniqueID: "source-approved" });
+    }
   });
   const revoke = useMutation({
     mutationFn: api.revokeSource,
     onSuccess: async (_result, sourceAgent) => {
       setDiscoveries((current) => { const next = { ...current }; delete next[sourceAgent]; return next; });
       await client.invalidateQueries({ queryKey: ["sources"] });
+      showToast({ body: "Source Root access revoked", uniqueID: "source-revoked" });
     }
   });
   const rawImport = useMutation({
     mutationFn: ({ sourceAgent, bytes }: { sourceAgent: string; bytes: ArrayBuffer }) => api.importSourceBundle(sourceAgent, bytes),
     onSuccess: async (outcome) => {
-      await Promise.all([
-        client.invalidateQueries({ queryKey: ["journeys"] }),
-        client.invalidateQueries({ queryKey: ["pending-evidence"] })
-      ]);
+      await Promise.all([client.invalidateQueries({ queryKey: ["journeys"] }), client.invalidateQueries({ queryKey: ["pending-evidence"] })]);
       if (outcome.pending.length > 0) setError(`${outcome.pending.length} imported bundle(s) became Pending Evidence.`);
-    }
+      else showToast({ body: "Native history imported", uniqueID: "raw-imported" });
+    },
+    onSettled: () => setRawFiles([])
   });
   const capture = useMutation({
     mutationFn: ({ sourceAgent, ids }: { sourceAgent: string; ids: string[] }) => api.capture(sourceAgent, ids),
     onSuccess: async (outcome) => {
-      await Promise.all([
-        client.invalidateQueries({ queryKey: ["journeys"] }),
-        client.invalidateQueries({ queryKey: ["pending-evidence"] })
-      ]);
+      await Promise.all([client.invalidateQueries({ queryKey: ["journeys"] }), client.invalidateQueries({ queryKey: ["pending-evidence"] })]);
       if (outcome.pending.length > 0) setError(`${outcome.pending.length} Source Bundle(s) were preserved as Pending Evidence.`);
+      else showToast({ body: "Selected Journeys captured", uniqueID: "journeys-captured" });
     }
   });
 
-  const importFiles = async (selected: FileList | null): Promise<void> => {
-    if (!selected?.length) return;
+  const importFiles = async (selected: FileList | File[] | null): Promise<void> => {
+    const files = selected ? Array.from(selected) : [];
+    if (!files.length) return;
+    setRawFiles(files);
     const entries: Record<string, Uint8Array> = {};
-    for (const file of Array.from(selected)) {
+    for (const file of files) {
       const relativePath = file.webkitRelativePath || file.name;
       entries[relativePath.replaceAll("\\", "/")] = new Uint8Array(await file.arrayBuffer());
     }
@@ -78,13 +146,40 @@ export function SourcesPage(): React.ReactNode {
       <p className="eyebrow">Passive capture</p>
       <h1>Source Roots</h1>
       <p className="lede narrow">AgentJourney never launches or modifies an agent. Approving a root permits read-only discovery; manual scan is the default.</p>
-      <div className="privacy-note"><strong>Local custody</strong><span>Raw files are copied byte-for-byte into an unencrypted local archive only after you capture them.</span></div>
-      {error && <div className="error-banner">{error}</div>}
+      <div className="source-custody-banner"><Banner status="info" title="Local custody" description="Raw files are copied byte-for-byte into an unencrypted local archive only after you capture them." collapsible={false} /></div>
+      {error && <Banner status="error" title="Source operation needs attention" description={error} collapsible={false} />}
       <section className="raw-import-panel">
-        <div><strong>Import native raw files</strong><span>Select one or more source files, or an agent session directory. Exact bytes are preserved before interpretation.</span></div>
-        <select value={importAgent} onChange={(event) => setImportAgent(event.target.value)}><option value="claude-code">Claude Code</option><option value="codex-cli">Codex CLI</option><option value="pi">Pi</option><option value="github-copilot-cli">GitHub Copilot CLI</option></select>
-        <label className="plugin-file-button">Choose files<input type="file" multiple onChange={(event) => void importFiles(event.currentTarget.files)} /></label>
-        <label className="plugin-file-button">Choose directory<input type="file" multiple {...({ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>)} onChange={(event) => void importFiles(event.currentTarget.files)} /></label>
+        <div className="raw-import-copy"><strong>Import native raw files</strong><span>Select one or more source files, or an agent session directory. Exact bytes are preserved before interpretation.</span></div>
+        <Selector
+          label="Source agent"
+          isLabelHidden
+          value={importAgent}
+          onChange={setImportAgent}
+          options={[
+            { value: "claude-code", label: "Claude Code" },
+            { value: "codex-cli", label: "Codex CLI" },
+            { value: "pi", label: "Pi" },
+            { value: "github-copilot-cli", label: "GitHub Copilot CLI" }
+          ]}
+        />
+        <FileInput
+          label="Native source files"
+          isLabelHidden
+          value={rawFiles}
+          onChange={(value) => void importFiles(Array.isArray(value) ? value : value ? [value] : [])}
+          isMultiple
+          placeholder="Choose files"
+          isLoading={rawImport.isPending}
+        />
+        <Button label="Choose directory" variant="secondary" onClick={() => directoryInputRef.current?.click()} isDisabled={rawImport.isPending} />
+        <input
+          ref={directoryInputRef}
+          className="visually-hidden-file-input"
+          type="file"
+          multiple
+          {...({ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+          onChange={(event) => void importFiles(event.currentTarget.files)}
+        />
         {rawImport.isPending && <small>Preserving and interpreting files…</small>}
       </section>
       <section className="source-list">
@@ -102,6 +197,12 @@ export function SourcesPage(): React.ReactNode {
               };
             });
           };
+          const editRoot = (): void => setRootEdit({
+            sourceAgent: source.sourceAgent,
+            displayName: source.displayName,
+            root: source.approvedRoot ?? source.suggestedRoot,
+            scanPolicy: source.scanPolicy
+          });
           return (
             <article className="source-card" key={source.sourceAgent}>
               <div className="source-card-main">
@@ -111,68 +212,64 @@ export function SourcesPage(): React.ReactNode {
                   <code>{source.approvedRoot ?? source.suggestedRoot}</code>
                   <small>{source.adapterId} · {source.adapterVersion} · {source.scanPolicy} scan</small>
                 </div>
-                <div className="source-actions">
+                <div className="source-actions agentjourney-astryx-inline-actions">
                   {!source.approved ? (
-                    <><button
-                      className="secondary-button"
-                      disabled={!source.available || approve.isPending}
-                      onClick={() => approve.mutate({ sourceAgent: source.sourceAgent, root: source.suggestedRoot })}
-                    >Approve suggested</button><button className="policy-button" onClick={() => { const root = window.prompt("Absolute Source Root path", source.suggestedRoot); if (root?.trim()) approve.mutate({ sourceAgent: source.sourceAgent, root: root.trim() }); }}>Choose root</button></>
+                    <>
+                      <Button label="Approve suggested" variant="secondary" size="sm" isDisabled={!source.available || approve.isPending} onClick={() => approve.mutate({ sourceAgent: source.sourceAgent, root: source.suggestedRoot })} />
+                      <Button label="Choose root" variant="ghost" size="sm" onClick={editRoot} />
+                    </>
                   ) : (
-                    <><button className="secondary-button" disabled={busySource === source.sourceAgent} onClick={() => void discover(source.sourceAgent)}>
-                      {busySource === source.sourceAgent ? "Scanning…" : "Preview scan"}
-                    </button><button className="policy-button" onClick={() => approve.mutate({ sourceAgent: source.sourceAgent, root: source.approvedRoot!, scanPolicy: source.scanPolicy === "manual" ? "automatic" : "manual" })}>{source.scanPolicy === "manual" ? "Enable auto" : "Use manual"}</button><button className="policy-button" onClick={() => { const root = window.prompt("Replace approved Source Root", source.approvedRoot); if (root?.trim()) approve.mutate({ sourceAgent: source.sourceAgent, root: root.trim(), scanPolicy: source.scanPolicy }); }}>Change root</button><button className="policy-button danger-text" onClick={() => { if (window.confirm(`Revoke filesystem access for ${source.displayName}? Archived Journeys remain.`)) revoke.mutate(source.sourceAgent); }}>Revoke</button></>
+                    <>
+                      <Button label="Preview scan" variant="secondary" size="sm" isLoading={busySource === source.sourceAgent} onClick={() => void discover(source.sourceAgent)} />
+                      <Button label={source.scanPolicy === "manual" ? "Enable auto" : "Use manual"} variant="ghost" size="sm" onClick={() => approve.mutate({ sourceAgent: source.sourceAgent, root: source.approvedRoot!, scanPolicy: source.scanPolicy === "manual" ? "automatic" : "manual" })} />
+                      <Button label="Change root" variant="ghost" size="sm" onClick={editRoot} />
+                      <Button label="Revoke" variant="destructive" size="sm" onClick={() => void confirmation.confirm({ title: `Revoke access for ${source.displayName}?`, description: "Filesystem access will be removed. Already archived Journeys remain available.", actionLabel: "Revoke access" }).then((confirmed) => { if (confirmed) revoke.mutate(source.sourceAgent); })} />
+                    </>
                   )}
                 </div>
               </div>
               {found && (
                 <div className="discovery-panel">
                   <div><strong>{found.length}</strong> candidate {found.length === 1 ? "Journey" : "Journeys"}<span>{found.reduce((count, item) => count + item.relativePaths.length, 0)} source files · {formatBytes(found.reduce((total, item) => total + (item.byteSize ?? 0), 0))} · {dateRange(found)}</span></div>
-                  <div className="capture-scope-actions"><button onClick={() => setSelectedBySource((current) => ({ ...current, [source.sourceAgent]: found.map(({ nativeSessionId }) => nativeSessionId) }))}>Select all</button><button onClick={() => setSelectedBySource((current) => ({ ...current, [source.sourceAgent]: [] }))}>Clear</button></div>
+                  <div className="capture-scope-actions"><Button label="Select all" variant="ghost" size="sm" onClick={() => setSelectedBySource((current) => ({ ...current, [source.sourceAgent]: found.map(({ nativeSessionId }) => nativeSessionId) }))} /><Button label="Clear" variant="ghost" size="sm" onClick={() => setSelectedBySource((current) => ({ ...current, [source.sourceAgent]: [] }))} /></div>
                   <ul>{found.map((item) => {
                     const sessionDate = item.startedAt ?? item.lastModifiedAt;
                     return (
                       <li className="discovery-candidate" key={item.nativeSessionId}>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={selected.includes(item.nativeSessionId)}
-                            onChange={() => toggleSelection(item.nativeSessionId)}
-                          />
-                          <span className="discovery-candidate-copy">
-                            <strong>{item.title ?? "Untitled"}</strong>
-                            {item.workspace && <small>{item.workspace}</small>}
-                          </span>
-                        </label>
+                        <CheckboxInput
+                          label={item.title ?? "Untitled"}
+                          {...(item.workspace ? { description: item.workspace } : {})}
+                          value={selected.includes(item.nativeSessionId)}
+                          onChange={() => toggleSelection(item.nativeSessionId)}
+                          size="sm"
+                          width="100%"
+                        />
                         <span className="discovery-candidate-facts">
-                          {sessionDate ? (
-                            <time dateTime={sessionDate} title={item.startedAt ? "Session started" : "Source last modified"}>
-                              {formatSessionDate(sessionDate)}
-                            </time>
-                          ) : <span>date unknown</span>}
+                          {sessionDate ? <time dateTime={sessionDate} title={item.startedAt ? "Session started" : "Source last modified"}>{formatSessionDate(sessionDate)}</time> : <span>date unknown</span>}
                           <span className="discovery-candidate-size">{formatBytes(item.byteSize ?? 0)}</span>
-                          {item.turnCountEstimate !== undefined && (
-                            <span
-                              className="discovery-candidate-turns"
-                              title="Estimated from source-native human prompts"
-                            >~{item.turnCountEstimate} {item.turnCountEstimate === 1 ? "turn" : "turns"}</span>
-                          )}
+                          {item.turnCountEstimate !== undefined && <span className="discovery-candidate-turns" title="Estimated from source-native human prompts">~{item.turnCountEstimate} {item.turnCountEstimate === 1 ? "turn" : "turns"}</span>}
                           <code title={item.nativeSessionId}>{item.nativeSessionId.slice(0, 12)}</code>
                         </span>
                       </li>
                     );
                   })}</ul>
-                  <button
-                    className="primary-button"
-                    disabled={capture.isPending || selected.length === 0}
-                    onClick={() => capture.mutate({ sourceAgent: source.sourceAgent, ids: selected })}
-                  >{capture.isPending ? "Capturing…" : `Capture selected (${selected.length})`}</button>
+                  <Button label={`Capture selected (${selected.length})`} variant="primary" isDisabled={capture.isPending || selected.length === 0} isLoading={capture.isPending} onClick={() => capture.mutate({ sourceAgent: source.sourceAgent, ids: selected })} />
                 </div>
               )}
             </article>
           );
         })}
       </section>
+      {confirmation.element}
+      {rootEdit && (
+        <SourceRootDialog
+          key={`${rootEdit.sourceAgent}:${rootEdit.root}`}
+          edit={rootEdit}
+          pending={approve.isPending}
+          onClose={() => setRootEdit(undefined)}
+          onSave={(root) => approve.mutate({ sourceAgent: rootEdit.sourceAgent, root, scanPolicy: rootEdit.scanPolicy })}
+        />
+      )}
     </main>
   );
 }
@@ -186,10 +283,7 @@ function formatBytes(bytes: number): string {
 function formatSessionDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.valueOf())) return "date unknown";
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(date);
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 function dateRange(items: DiscoveredJourneyDocument[]): string {

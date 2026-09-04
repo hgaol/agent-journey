@@ -1,4 +1,11 @@
 import { useEffect, useState } from "react";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Button } from "@astryxdesign/core/Button";
+import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
+import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { ProgressBar } from "@astryxdesign/core/ProgressBar";
+import { Selector } from "@astryxdesign/core/Selector";
 import type { ReplayVideoExportOptionsDocument } from "@agentjourney/contracts";
 
 export interface VideoRendererChoice {
@@ -23,9 +30,7 @@ export function VideoExportDialog(props: {
   const [quality, setQuality] = useState<ReplayVideoExportOptionsDocument["quality"]>("1080p");
   const [speed, setSpeed] = useState<ReplayVideoExportOptionsDocument["speed"]>(1);
   const [fps, setFps] = useState<ReplayVideoExportOptionsDocument["fps"]>(30);
-  const [streamMode, setStreamMode] = useState<ReplayVideoExportOptionsDocument["streamMode"]>(
-    props.initialStreamMode
-  );
+  const [streamMode, setStreamMode] = useState<ReplayVideoExportOptionsDocument["streamMode"]>(props.initialStreamMode);
   const [promptTyping, setPromptTyping] = useState(true);
   const [typingSpeed, setTypingSpeed] = useState<NonNullable<ReplayVideoExportOptionsDocument["typingSpeed"]>>(1);
   const [rendererId, setRendererId] = useState(props.rendererId);
@@ -89,124 +94,187 @@ export function VideoExportDialog(props: {
       setExporting(false);
     }
   };
+  const requestClose = (isOpen: boolean): void => {
+    if (!isOpen && !exporting) props.onClose();
+  };
 
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="small-dialog video-export-dialog" role="dialog" aria-modal="true" aria-labelledby="video-export-title">
-        <header>
-          <div>
-            <p className="eyebrow">Local video export</p>
-            <h2 id="video-export-title">Export Replay as MP4</h2>
-          </div>
-          <button className="icon-button" onClick={props.onClose} disabled={exporting} aria-label="Close">×</button>
-        </header>
-        <p className="video-export-copy">
-          Renders the source-native Journey Stage locally. MP4 exports contain no audio, accounts, or telemetry.
-        </p>
-        <label>
-          Renderer
-          <select value={rendererId} onChange={(event) => setRendererId(event.target.value)} disabled={exporting}>
-            {props.renderers.map((renderer) => (
-              <option key={renderer.id} value={renderer.id} disabled={!renderer.stylePack}>
-                {renderer.name}{renderer.stylePack ? "" : " (HTML only)"}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Rendering engine
-          <select value={browser} onChange={(event) => setBrowser(event.target.value as NonNullable<ReplayVideoExportOptionsDocument["browser"]>)} disabled={exporting}>
-            <option value="auto">Auto · Chromium, Chrome, Edge, then WebKit</option>
-            <option value="chromium">Playwright Chromium</option>
-            <option value="chrome">Google Chrome</option>
-            <option value="edge">Microsoft Edge · Stable/Beta/Dev/Canary</option>
-            <option value="webkit">WebKit · Safari-compatible</option>
-          </select>
-          <small>WebKit uses Playwright's Safari-compatible engine; installed Safari itself cannot run headlessly.</small>
-        </label>
-        <label>
-          Quality
-          <select value={quality} onChange={(event) => setQuality(event.target.value as ReplayVideoExportOptionsDocument["quality"])} disabled={exporting}>
-            <option value="720p">Standard · 720p</option>
-            <option value="1080p">High · 1080p</option>
-            <option value="1440p">Ultra · 1440p</option>
-          </select>
-        </label>
-        <div className="video-export-row">
-          <label>
-            Playback speed
-            <select value={speed} onChange={(event) => setSpeed(Number(event.target.value) as ReplayVideoExportOptionsDocument["speed"])} disabled={exporting}>
-              <option value={0.5}>0.5×</option>
-              <option value={1}>1×</option>
-              <option value={2}>2×</option>
-              <option value={4}>4×</option>
-              <option value={8}>8×</option>
-              <option value={16}>16×</option>
-            </select>
-          </label>
-          <label>
-            Frame rate
-            <select value={fps} onChange={(event) => setFps(Number(event.target.value) as ReplayVideoExportOptionsDocument["fps"])} disabled={exporting}>
-              <option value={30}>30 fps</option>
-              <option value={60}>60 fps</option>
-            </select>
-          </label>
-        </div>
-        <label>
-          Replay content
-          <select value={streamMode} onChange={(event) => setStreamMode(event.target.value as ReplayVideoExportOptionsDocument["streamMode"])} disabled={exporting}>
-            <option value="events">Event steps</option>
-            <option value="recorded" disabled={!props.recordedStreamingAvailable}>Recorded stream</option>
-            <option value="simulated">Simulated TUI stream</option>
-          </select>
-          <small>Simulated streaming is permanently labeled in the exported video.</small>
-        </label>
-        <label className="checkbox-label video-export-prompt-typing">
-          <input type="checkbox" checked={promptTyping} onChange={(event) => setPromptTyping(event.target.checked)} disabled={exporting} />
-          Simulate user typing before prompt submission
-        </label>
-        <small className="video-export-field-note">Typing is presentation-only and permanently labeled as simulated.</small>
-        {promptTyping && (
-          <label>
-            Typing speed
-            <select value={typingSpeed} onChange={(event) => setTypingSpeed(Number(event.target.value) as NonNullable<ReplayVideoExportOptionsDocument["typingSpeed"]>)} disabled={exporting}>
-              <option value={0.5}>Slow · 0.5×</option>
-              <option value={1}>Normal · 1×</option>
-              <option value={2}>Fast · 2×</option>
-              <option value={4}>Very fast · 4×</option>
-            </select>
-          </label>
+    <Dialog
+      className="agentjourney-astryx-dialog agentjourney-video-dialog"
+      isOpen
+      onOpenChange={requestClose}
+      purpose="form"
+      width={600}
+      maxHeight="92dvh"
+      padding={0}
+    >
+      <Layout
+        height="auto"
+        header={(
+          <DialogHeader
+            title="Export Replay as MP4"
+            subtitle="Local video export"
+            {...(!exporting ? { onOpenChange: requestClose } : {})}
+          />
         )}
-        <label className="checkbox-label video-export-redaction">
-          <input type="checkbox" checked={reveal} onChange={(event) => setReveal(event.target.checked)} disabled={exporting} />
-          Export unredacted content
-        </label>
-        {reveal && <p className="video-export-warning">The MP4 may contain credentials or private source code.</p>}
-        {error && <p className="video-export-error">{error}</p>}
-        {exporting && (
-          <div
-            className="video-export-progress"
-            role="progressbar"
-            aria-label="MP4 export progress"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress.percent}
-          >
-            <div>
-              <span>{progress.message}</span>
-              <strong>{progress.percent}%</strong>
+        content={(
+          <LayoutContent className="agentjourney-video-fields" padding={4} isScrollable>
+            <p className="video-export-copy">
+              Renders the source-native Journey Stage locally. MP4 exports contain no audio, accounts, or telemetry.
+            </p>
+            <Selector
+              label="Renderer"
+              value={rendererId}
+              onChange={setRendererId}
+              options={props.renderers.map((renderer) => ({
+                value: renderer.id,
+                label: `${renderer.name}${renderer.stylePack ? "" : " (HTML only)"}`,
+                disabled: !renderer.stylePack
+              }))}
+              isDisabled={exporting}
+              width="100%"
+            />
+            <Selector
+              label="Rendering engine"
+              value={browser}
+              onChange={(value) => setBrowser(value as NonNullable<ReplayVideoExportOptionsDocument["browser"]>)}
+              options={[
+                { value: "auto", label: "Auto · Chromium, Chrome, Edge, then WebKit" },
+                { value: "chromium", label: "Playwright Chromium" },
+                { value: "chrome", label: "Google Chrome" },
+                { value: "edge", label: "Microsoft Edge · Stable/Beta/Dev/Canary" },
+                { value: "webkit", label: "WebKit · Safari-compatible" }
+              ]}
+              description="WebKit uses Playwright's Safari-compatible engine; installed Safari itself cannot run headlessly."
+              isDisabled={exporting}
+              width="100%"
+            />
+            <Selector
+              label="Quality"
+              value={quality}
+              onChange={(value) => setQuality(value as ReplayVideoExportOptionsDocument["quality"])}
+              options={[
+                { value: "720p", label: "Standard · 720p" },
+                { value: "1080p", label: "High · 1080p" },
+                { value: "1440p", label: "Ultra · 1440p" }
+              ]}
+              isDisabled={exporting}
+              width="100%"
+            />
+            <div className="video-export-row">
+              <Selector
+                label="Playback speed"
+                value={String(speed)}
+                onChange={(value) => setSpeed(Number(value) as ReplayVideoExportOptionsDocument["speed"])}
+                options={[0.5, 1, 2, 4, 8, 16].map((value) => ({ value: String(value), label: `${value}×` }))}
+                isDisabled={exporting}
+                width="100%"
+              />
+              <Selector
+                label="Frame rate"
+                value={String(fps)}
+                onChange={(value) => setFps(Number(value) as ReplayVideoExportOptionsDocument["fps"])}
+                options={[
+                  { value: "30", label: "30 fps" },
+                  { value: "60", label: "60 fps" }
+                ]}
+                isDisabled={exporting}
+                width="100%"
+              />
             </div>
-            <i><span style={{ width: `${progress.percent}%` }} /></i>
-            {progress.total > 0 && <small>{progress.completed}/{progress.total} Replay frames</small>}
-          </div>
+            <Selector
+              label="Replay content"
+              value={streamMode}
+              onChange={(value) => setStreamMode(value as ReplayVideoExportOptionsDocument["streamMode"])}
+              options={[
+                { value: "events", label: "Event steps" },
+                { value: "recorded", label: "Recorded stream", disabled: !props.recordedStreamingAvailable },
+                { value: "simulated", label: "Simulated TUI stream" }
+              ]}
+              description="Simulated streaming is permanently labeled in the exported video."
+              isDisabled={exporting}
+              width="100%"
+            />
+            <CheckboxInput
+              label="Simulate user typing before prompt submission"
+              description="Typing is presentation-only and permanently labeled as simulated."
+              value={promptTyping}
+              onChange={setPromptTyping}
+              isDisabled={exporting}
+              width="100%"
+            />
+            {promptTyping && (
+              <Selector
+                label="Typing speed"
+                value={String(typingSpeed)}
+                onChange={(value) => setTypingSpeed(Number(value) as NonNullable<ReplayVideoExportOptionsDocument["typingSpeed"]>)}
+                options={[
+                  { value: "0.5", label: "Slow · 0.5×" },
+                  { value: "1", label: "Normal · 1×" },
+                  { value: "2", label: "Fast · 2×" },
+                  { value: "4", label: "Very fast · 4×" }
+                ]}
+                isDisabled={exporting}
+                width="100%"
+              />
+            )}
+            <CheckboxInput
+              label="Export unredacted content"
+              value={reveal}
+              onChange={setReveal}
+              isDisabled={exporting}
+              width="100%"
+            />
+            {reveal && (
+              <Banner
+                status="warning"
+                title="Unredacted export"
+                description="The MP4 may contain credentials or private source code."
+                collapsible={false}
+              />
+            )}
+            {error && (
+              <Banner
+                status="error"
+                title="MP4 export failed"
+                description={error}
+                collapsible={false}
+              />
+            )}
+            {exporting && (
+              <div className="agentjourney-video-progress">
+                <div><span>{progress.message}</span><strong>{progress.percent}%</strong></div>
+                <ProgressBar
+                  label="MP4 export progress"
+                  value={progress.percent}
+                  max={100}
+                  isLabelHidden
+                />
+                {progress.total > 0 && <small>{progress.completed}/{progress.total} Replay frames</small>}
+              </div>
+            )}
+          </LayoutContent>
         )}
-        <footer>
-          <button className="secondary-button" onClick={props.onClose} disabled={exporting}>Cancel</button>
-          <button className="primary-button" onClick={() => void submit()} disabled={exporting || !rendererId}>
-            {exporting ? "Exporting…" : "Export MP4"}
-          </button>
-        </footer>
-      </section>
-    </div>
+        footer={(
+          <LayoutFooter hasDivider>
+            <div className="agentjourney-astryx-actions">
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onClick={() => requestClose(false)}
+                isDisabled={exporting}
+              />
+              <Button
+                label="Export MP4"
+                variant="primary"
+                onClick={() => void submit()}
+                isLoading={exporting}
+                isDisabled={exporting || !rendererId}
+              />
+            </div>
+          </LayoutFooter>
+        )}
+      />
+    </Dialog>
   );
 }

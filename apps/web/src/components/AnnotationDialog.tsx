@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
@@ -7,8 +8,6 @@ import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import type { ActivityDocument, JourneyDetailDocument } from "@agentjourney/contracts";
 import { api } from "../api.js";
-import "@astryxdesign/core/astryx.css";
-import "@astryxdesign/theme-neutral/theme.css";
 import "./AnnotationDialog.css";
 
 export function AnnotationDialog(props: {
@@ -32,11 +31,6 @@ export function AnnotationDialog(props: {
   };
 
   return (
-    <div
-      className="agentjourney-astryx-scope"
-      data-astryx-theme="neutral"
-      data-theme="dark"
-    >
       <Dialog
         className="agentjourney-astryx-dialog"
         isOpen
@@ -47,7 +41,7 @@ export function AnnotationDialog(props: {
         padding={0}
       >
         <form
-          className="agentjourney-astryx-annotation-form"
+          className="agentjourney-astryx-form"
           onSubmit={(event) => {
             event.preventDefault();
             save.mutate();
@@ -91,15 +85,18 @@ export function AnnotationDialog(props: {
                   width="100%"
                 />
                 {save.error && (
-                  <div className="agentjourney-astryx-error" role="alert">
-                    {save.error.message}
-                  </div>
+                  <Banner
+                    status="error"
+                    title="Annotation could not be saved"
+                    description={save.error.message}
+                    collapsible={false}
+                  />
                 )}
               </LayoutContent>
             )}
             footer={(
               <LayoutFooter hasDivider>
-                <div className="agentjourney-astryx-annotation-actions">
+                <div className="agentjourney-astryx-actions">
                   <Button
                     label="Cancel"
                     variant="secondary"
@@ -121,6 +118,5 @@ export function AnnotationDialog(props: {
           />
         </form>
       </Dialog>
-    </div>
   );
 }

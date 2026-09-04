@@ -1,11 +1,17 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@astryxdesign/core/Button";
+import { DateInput } from "@astryxdesign/core/DateInput";
+import { Selector } from "@astryxdesign/core/Selector";
+import { TextInput } from "@astryxdesign/core/TextInput";
 import { api } from "../api.js";
 import { EmptyState } from "../components/EmptyState.js";
 import { shortId, sourceLabel } from "../source-brand.js";
 
 const ACTIVITY_KINDS = ["human-input", "agent-output", "reasoning", "tool-invocation", "tool-result", "context-injection", "diagnostic", "unclassified"];
+const CAPABILITIES = ["shell", "file-read", "file-edit", "search", "web", "delegation", "interaction", "custom"];
+type ISODateValue = `${number}${number}${number}${number}-${number}${number}-${number}${number}`;
 
 export function LibraryPage(): React.ReactNode {
   const [query, setQuery] = useState("");
@@ -13,8 +19,8 @@ export function LibraryPage(): React.ReactNode {
   const [kind, setKind] = useState("");
   const [projectId, setProjectId] = useState("");
   const [capability, setCapability] = useState("");
-  const [from, setFrom] = useState("");
-  const [until, setUntil] = useState("");
+  const [from, setFrom] = useState<ISODateValue | "">("");
+  const [until, setUntil] = useState<ISODateValue | "">("");
   const journeys = useQuery({ queryKey: ["journeys"], queryFn: api.listJourneys });
   const projects = useQuery({ queryKey: ["projects"], queryFn: api.listProjects });
   const searching = query.trim().length > 1 || Boolean(sourceAgent || kind || projectId || capability || from || until);
@@ -35,6 +41,15 @@ export function LibraryPage(): React.ReactNode {
     if (!projectId) return journeys.data;
     return journeys.data?.filter((journey) => journey.projectId === projectId);
   }, [journeys.data, projectId]);
+  const clearFilters = (): void => {
+    setQuery("");
+    setSourceAgent("");
+    setKind("");
+    setProjectId("");
+    setCapability("");
+    setFrom("");
+    setUntil("");
+  };
 
   return (
     <main className="page library-page">
@@ -43,15 +58,30 @@ export function LibraryPage(): React.ReactNode {
         <div className="library-count"><strong>{journeys.data?.length ?? 0}</strong><span>Journeys</span></div>
       </section>
 
-      <label className="search-box"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search canonical activity…" /></label>
-      <div className="search-filters">
-        <label>Source<select value={sourceAgent} onChange={(event) => setSourceAgent(event.target.value)}><option value="">All agents</option><option value="claude-code">Claude Code</option><option value="codex-cli">Codex CLI</option><option value="pi">Pi</option><option value="github-copilot-cli">Copilot CLI</option></select></label>
-        <label>Activity<select value={kind} onChange={(event) => setKind(event.target.value)}><option value="">All kinds</option>{ACTIVITY_KINDS.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
-        <label>Capability<select value={capability} onChange={(event) => setCapability(event.target.value)}><option value="">All capabilities</option>{["shell", "file-read", "file-edit", "search", "web", "delegation", "interaction", "custom"].map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
-        <label>Project<select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">All projects</option>{projects.data?.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
-        <label>From<input type="date" value={from} onChange={(event) => setFrom(event.target.value)} /></label>
-        <label>Until<input type="date" value={until} onChange={(event) => setUntil(event.target.value)} /></label>
-        {(query || sourceAgent || kind || projectId || capability || from || until) && <button onClick={() => { setQuery(""); setSourceAgent(""); setKind(""); setProjectId(""); setCapability(""); setFrom(""); setUntil(""); }}>Clear</button>}
+      <div className="search-box astryx-search-box">
+        <TextInput
+          label="Search canonical activity"
+          isLabelHidden
+          value={query}
+          onChange={setQuery}
+          hasClear
+          placeholder="Search canonical activity…"
+          width="100%"
+        />
+      </div>
+      <div className="search-filters astryx-search-filters">
+        <Selector label="Source" value={sourceAgent} onChange={(value) => setSourceAgent(value ?? "")} placeholder="All agents" hasClear options={[
+          { value: "claude-code", label: "Claude Code" },
+          { value: "codex-cli", label: "Codex CLI" },
+          { value: "pi", label: "Pi" },
+          { value: "github-copilot-cli", label: "Copilot CLI" }
+        ]} size="sm" />
+        <Selector label="Activity" value={kind} onChange={(value) => setKind(value ?? "")} placeholder="All kinds" hasClear options={ACTIVITY_KINDS.map((value) => ({ value, label: value }))} size="sm" />
+        <Selector label="Capability" value={capability} onChange={(value) => setCapability(value ?? "")} placeholder="All capabilities" hasClear options={CAPABILITIES.map((value) => ({ value, label: value }))} size="sm" />
+        <Selector label="Project" value={projectId} onChange={(value) => setProjectId(value ?? "")} placeholder="All projects" hasClear options={(projects.data ?? []).map((project) => ({ value: project.id, label: project.name }))} size="sm" />
+        <DateInput label="From" {...(from ? { value: from } : {})} onChange={(value) => setFrom(value ?? "")} hasClear format="system_date" size="sm" />
+        <DateInput label="Until" {...(until ? { value: until } : {})} onChange={(value) => setUntil(value ?? "")} hasClear format="system_date" size="sm" />
+        {searching && <Button label="Clear filters" variant="ghost" size="sm" onClick={clearFilters} />}
       </div>
 
       {searching ? (

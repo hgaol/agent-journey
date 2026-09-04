@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Button } from "@astryxdesign/core/Button";
+import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { Selector } from "@astryxdesign/core/Selector";
+import { TextInput } from "@astryxdesign/core/TextInput";
 import type { JourneyDetailDocument, ProjectDocument } from "@agentjourney/contracts";
 import { api } from "../api.js";
 
@@ -39,18 +45,107 @@ export function OverlayEditor(props: {
       props.onClose();
     }
   });
+  const requestClose = (isOpen: boolean): void => {
+    if (!isOpen && !save.isPending) props.onClose();
+  };
 
   return (
-    <div className="modal-backdrop" role="presentation">
-      <form className="small-dialog" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}>
-        <header><div><p className="eyebrow">Review Overlay</p><h2>Organize this Journey</h2></div><button type="button" className="icon-button" onClick={props.onClose}>×</button></header>
-        <label>Display title<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder={props.journey.interpretation.journey.title ?? "Untitled journey"} /></label>
-        <label>Tags<input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="audit, auth, successful" /><small>Comma-separated</small></label>
-        <label>Project<select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">Unassigned</option>{props.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
-        <label>Or create Project<input value={newProject} onChange={(event) => setNewProject(event.target.value)} placeholder="Project name" /></label>
-        {save.error && <div className="error-banner">{save.error.message}</div>}
-        <footer><button type="button" className="secondary-button" onClick={props.onClose}>Cancel</button><button className="primary-button" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save overlay"}</button></footer>
+    <Dialog
+      className="agentjourney-astryx-dialog"
+      isOpen
+      onOpenChange={requestClose}
+      purpose="form"
+      width={520}
+      maxHeight="92dvh"
+      padding={0}
+    >
+      <form
+        className="agentjourney-astryx-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          save.mutate();
+        }}
+      >
+        <Layout
+          height="auto"
+          header={(
+            <DialogHeader
+              title="Organize this Journey"
+              subtitle="Review Overlay"
+              {...(!save.isPending ? { onOpenChange: requestClose } : {})}
+            />
+          )}
+          content={(
+            <LayoutContent className="agentjourney-astryx-fields" padding={4} isScrollable>
+              <TextInput
+                label="Display title"
+                value={title}
+                onChange={setTitle}
+                placeholder={props.journey.interpretation.journey.title ?? "Untitled journey"}
+                isDisabled={save.isPending}
+                width="100%"
+              />
+              <TextInput
+                label="Tags"
+                value={tags}
+                onChange={setTags}
+                description="Comma-separated"
+                placeholder="audit, auth, successful"
+                isDisabled={save.isPending}
+                width="100%"
+              />
+              <Selector
+                label="Project"
+                value={projectId}
+                onChange={setProjectId}
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...props.projects.map((project) => ({ value: project.id, label: project.name }))
+                ]}
+                isDisabled={save.isPending}
+                width="100%"
+              />
+              <TextInput
+                label="Or create Project"
+                value={newProject}
+                onChange={setNewProject}
+                placeholder="Project name"
+                isDisabled={save.isPending}
+                width="100%"
+              />
+              {save.error && (
+                <Banner
+                  status="error"
+                  title="Overlay could not be saved"
+                  description={save.error.message}
+                  collapsible={false}
+                />
+              )}
+            </LayoutContent>
+          )}
+          footer={(
+            <LayoutFooter hasDivider>
+              <div className="agentjourney-astryx-actions">
+                <Button
+                  label="Cancel"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => requestClose(false)}
+                  isDisabled={save.isPending}
+                />
+                <Button
+                  label="Save overlay"
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  isLoading={save.isPending}
+                  isDisabled={save.isPending}
+                />
+              </div>
+            </LayoutFooter>
+          )}
+        />
       </form>
-    </div>
+    </Dialog>
   );
 }

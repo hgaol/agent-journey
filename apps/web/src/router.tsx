@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import {
   Link,
   Outlet,
@@ -6,11 +7,16 @@ import {
   createRouter
 } from "@tanstack/react-router";
 import type { QueryClient } from "@tanstack/react-query";
-import { LibraryPage } from "./views/LibraryPage.js";
-import { JourneyPage } from "./views/JourneyPage.js";
-import { SourcesPage } from "./views/SourcesPage.js";
-import { SettingsPage } from "./views/SettingsPage.js";
 import { useArchiveEvents } from "./hooks/useArchiveEvents.js";
+
+const LibraryPage = lazy(async () => ({ default: (await import("./views/LibraryPage.js")).LibraryPage }));
+const JourneyPage = lazy(async () => ({ default: (await import("./views/JourneyPage.js")).JourneyPage }));
+const SourcesPage = lazy(async () => ({ default: (await import("./views/SourcesPage.js")).SourcesPage }));
+const SettingsPage = lazy(async () => ({ default: (await import("./views/SettingsPage.js")).SettingsPage }));
+
+function lazyRoute(element: React.ReactNode): React.ReactNode {
+  return <Suspense fallback={<main className="page"><div className="loading">Loading local interface…</div></main>}>{element}</Suspense>;
+}
 
 interface RouterContext {
   queryClient: QueryClient;
@@ -40,14 +46,26 @@ function Shell(): React.ReactNode {
 }
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({ component: Shell });
-const libraryRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: LibraryPage });
-const sourcesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/sources", component: SourcesPage });
+const libraryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: () => lazyRoute(<LibraryPage />)
+});
+const sourcesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sources",
+  component: () => lazyRoute(<SourcesPage />)
+});
 const journeyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/journeys/$journeyId",
-  component: JourneyPage
+  component: () => lazyRoute(<JourneyPage />)
 });
-const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", component: SettingsPage });
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: () => lazyRoute(<SettingsPage />)
+});
 const routeTree = rootRoute.addChildren([libraryRoute, sourcesRoute, journeyRoute, settingsRoute]);
 
 export const router = createRouter({ routeTree, context: { queryClient: undefined! } });
