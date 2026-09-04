@@ -322,6 +322,8 @@ export interface SearchHitDocument {
   kind: ActivityKind;
   text: string;
   evidenceAnchor: string;
+  matchCount: number;
+  matchedKinds: ActivityKind[];
 }
 export interface ProjectDocument {
   id: string;

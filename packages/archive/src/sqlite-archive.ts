@@ -486,20 +486,56 @@ export class SqliteJourneyArchive implements JourneyArchive {
     }
     const safeLimit = Math.max(1, Math.min(options.limit ?? 50, 200));
     values.push(safeLimit);
+    const representativeOrder = match
+      ? "relevance ASC, CASE WHEN text_content = '' THEN 1 ELSE 0 END, source_order ASC"
+      : "sort_time DESC, source_order DESC";
+    const resultOrder = match
+      ? "ranked.relevance ASC, ranked.sort_time DESC"
+      : "ranked.sort_time DESC, ranked.source_order DESC";
     let rows: unknown[];
     try {
       rows = this.database.prepare(`
+        WITH matches AS MATERIALIZED (
+          SELECT
+            f.journey_id, f.revision_id, f.interpretation_id, f.activity_id,
+            j.source_agent, COALESCE(o.display_title, j.title) AS title,
+            a.kind, a.text_content, a.evidence_anchor,
+            ${match ? "bm25(activity_fts)" : "0"} AS relevance,
+            COALESCE(a.timestamp, j.started_at, j.updated_at) AS sort_time,
+            a.source_order
+          FROM activity_fts f
+          JOIN journeys j ON j.id = f.journey_id
+          JOIN journey_revisions r ON r.id = f.revision_id
+          JOIN activities a ON a.interpretation_id = f.interpretation_id AND a.activity_id = f.activity_id
+          LEFT JOIN review_overlays o ON o.journey_id = j.id
+          WHERE ${conditions.join(" AND ")}
+        ),
+        ranked AS (
+          SELECT
+            *,
+            ROW_NUMBER() OVER (
+              PARTITION BY journey_id
+              ORDER BY ${representativeOrder}
+            ) AS representative_rank
+          FROM matches
+        ),
+        aggregates AS (
+          SELECT
+            journey_id,
+            COUNT(*) AS match_count,
+            GROUP_CONCAT(DISTINCT kind) AS matched_kinds
+          FROM matches
+          GROUP BY journey_id
+        )
         SELECT
-          f.journey_id, f.revision_id, f.interpretation_id, f.activity_id,
-          j.source_agent, COALESCE(o.display_title, j.title) AS title,
-          a.kind, a.text_content, a.evidence_anchor
-        FROM activity_fts f
-        JOIN journeys j ON j.id = f.journey_id
-        JOIN journey_revisions r ON r.id = f.revision_id
-        JOIN activities a ON a.interpretation_id = f.interpretation_id AND a.activity_id = f.activity_id
-        LEFT JOIN review_overlays o ON o.journey_id = j.id
-        WHERE ${conditions.join(" AND ")}
-        ${match ? "ORDER BY bm25(activity_fts)" : "ORDER BY COALESCE(a.timestamp, j.updated_at) DESC, a.source_order"}
+          ranked.journey_id, ranked.revision_id, ranked.interpretation_id,
+          ranked.activity_id, ranked.source_agent, ranked.title, ranked.kind,
+          ranked.text_content, ranked.evidence_anchor,
+          aggregates.match_count, aggregates.matched_kinds
+        FROM ranked
+        JOIN aggregates USING (journey_id)
+        WHERE ranked.representative_rank = 1
+        ORDER BY ${resultOrder}
         LIMIT ?
       `).all(...values);
     } catch {
@@ -517,7 +553,12 @@ export class SqliteJourneyArchive implements JourneyArchive {
         ...(title ? { title } : {}),
         kind: String(value.kind),
         text: maskSensitiveText(String(value.text_content)),
-        evidenceAnchor: String(value.evidence_anchor)
+        evidenceAnchor: String(value.evidence_anchor),
+        matchCount: Number(value.match_count),
+        matchedKinds: String(value.matched_kinds ?? "")
+          .split(",")
+          .filter(Boolean)
+          .sort()
       };
     });
   }

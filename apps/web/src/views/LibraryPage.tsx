@@ -41,6 +41,7 @@ export function LibraryPage(): React.ReactNode {
     if (!projectId) return journeys.data;
     return journeys.data?.filter((journey) => journey.projectId === projectId);
   }, [journeys.data, projectId]);
+  const matchingJourneyCount = search.data?.length ?? 0;
   const clearFilters = (): void => {
     setQuery("");
     setSourceAgent("");
@@ -86,11 +87,15 @@ export function LibraryPage(): React.ReactNode {
 
       {searching ? (
         <section className="result-list">
-          <div className="section-title"><h2>Search results</h2><span>{search.data?.length ?? 0} matches</span></div>
+          <div className="section-title"><h2>Search results</h2><span>{matchingJourneyCount} {matchingJourneyCount === 1 ? "Journey" : "Journeys"}</span></div>
           {search.data?.map((hit) => (
-            <Link key={`${hit.interpretationId}:${hit.activityId}`} to="/journeys/$journeyId" params={{ journeyId: hit.journeyId }} className="search-hit">
-              <div><span className={`source-dot source-${hit.sourceAgent}`} />{sourceLabel(hit.sourceAgent)} · {hit.kind}</div>
-              <strong>{hit.title ?? "Untitled journey"}</strong><p>{hit.text || hit.evidenceAnchor}</p>
+            <Link key={hit.journeyId} to="/journeys/$journeyId" params={{ journeyId: hit.journeyId }} className="search-hit">
+              <div>
+                <span className={`source-dot source-${hit.sourceAgent}`} />
+                {sourceLabel(hit.sourceAgent)} · {hit.matchCount} matching {hit.matchCount === 1 ? "Activity" : "Activities"} · {formatMatchedKinds(hit.matchedKinds)}
+              </div>
+              <strong>{hit.title ?? "Untitled journey"}</strong>
+              <p>{hit.text || hit.evidenceAnchor}</p>
             </Link>
           ))}
           {!search.isLoading && search.data?.length === 0 && <EmptyState title="No matching activity" detail="Try fewer filters or a different phrase." />}
@@ -113,4 +118,10 @@ export function LibraryPage(): React.ReactNode {
       )}
     </main>
   );
+}
+
+function formatMatchedKinds(kinds: readonly string[]): string {
+  const shown = kinds.slice(0, 3).map((kind) => kind.replaceAll("-", " "));
+  const remaining = kinds.length - shown.length;
+  return `${shown.join(", ")}${remaining > 0 ? ` +${remaining}` : ""}` || "matching content";
 }

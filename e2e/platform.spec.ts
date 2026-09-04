@@ -104,6 +104,9 @@ test("uses Astryx across shell controls and forensic dialog shells", async ({ pa
   const sourceFilter = page.getByRole("combobox", { name: "Source" });
   await sourceFilter.click();
   await page.getByRole("option", { name: "Pi", exact: true }).click();
+  await expect(page.locator(".search-hit")).toHaveCount(1);
+  await expect(page.locator(".section-title")).toContainText("1 Journey");
+  await expect(page.locator(".search-hit")).toContainText("matching Activities");
   await expect(page.getByRole("button", { name: "Clear filters" })).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
   await expect(page.getByRole("combobox", { name: "From" })).toBeVisible();

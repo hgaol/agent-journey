@@ -648,7 +648,7 @@
     "SearchHitDocument": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["journeyId", "revisionId", "interpretationId", "activityId", "sourceAgent", "kind", "text", "evidenceAnchor"],
+      "required": ["journeyId", "revisionId", "interpretationId", "activityId", "sourceAgent", "kind", "text", "evidenceAnchor", "matchCount", "matchedKinds"],
       "properties": {
         "journeyId": { "type": "string" },
         "revisionId": { "type": "string" },
@@ -658,7 +658,13 @@
         "title": { "type": "string" },
         "kind": { "$ref": "#/$defs/ActivityKind" },
         "text": { "type": "string" },
-        "evidenceAnchor": { "type": "string" }
+        "evidenceAnchor": { "type": "string" },
+        "matchCount": { "type": "integer", "minimum": 1 },
+        "matchedKinds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ActivityKind" },
+          "uniqueItems": true
+        }
       }
     },
     "StageDocument": {

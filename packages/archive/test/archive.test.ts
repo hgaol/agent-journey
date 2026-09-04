@@ -107,6 +107,27 @@ describe("SqliteJourneyArchive", () => {
     const hits = await archive.search("greeting constant");
     expect(hits.length).toBeGreaterThan(0);
     expect(hits[0]?.sourceAgent).toBe("pi");
+    const grouped = await archive.search("greeting");
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0]?.matchCount).toBeGreaterThan(1);
+    expect(grouped[0]?.matchedKinds).toContain("human-input");
+    expect(new Set(grouped.map(({ journeyId }) => journeyId)).size).toBe(grouped.length);
+
+    const secondCapture = await fixtureCapture();
+    await archive.commitCapture({
+      ...secondCapture,
+      interpretation: {
+        ...secondCapture.interpretation,
+        journey: {
+          ...secondCapture.interpretation.journey,
+          nativeSessionId: "search-result-second-session",
+          title: "Second matching Journey"
+        }
+      }
+    });
+    const acrossJourneys = await archive.search({ query: "greeting", limit: 2 });
+    expect(acrossJourneys).toHaveLength(2);
+    expect(new Set(acrossJourneys.map(({ journeyId }) => journeyId)).size).toBe(2);
     expect((await archive.search({ query: "greet*", kind: "agent-output" })).length).toBeGreaterThan(0);
     expect((await archive.search({ query: "\"greeting constant\"" })).length).toBeGreaterThan(0);
     expect(await archive.search("definitely-not-present")).toEqual([]);

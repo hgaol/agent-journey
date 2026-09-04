@@ -93,6 +93,8 @@ export interface SearchHit {
   kind: string;
   text: string;
   evidenceAnchor: string;
+  matchCount: number;
+  matchedKinds: string[];
 }
 
 export interface PendingEvidenceInput {
