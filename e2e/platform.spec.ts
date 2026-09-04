@@ -51,6 +51,38 @@ test("reviews and re-renders a captured Journey", async ({ page }) => {
   await expect(page.getByText("Exact Source Bundle")).toBeVisible();
 });
 
+test("uses a scoped Astryx form dialog for Review annotations", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("Read the greeting file.", { exact: true }).click();
+  await page.getByLabel("Renderer").selectOption("builtin.pi");
+  const stage = page.frameLocator("iframe.journey-stage");
+  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
+  await page.locator(".terminal-inspector-actions").getByRole("button", { name: "annotate" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "Review annotation" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveClass(/astryx-dialog/u);
+  await expect(page.getByRole("heading", { name: "Review annotation" })).toBeFocused();
+  await expect(page.locator("html")).not.toHaveAttribute("data-astryx-theme");
+  await page.setViewportSize({ width: 390, height: 700 });
+  const narrowDialogBox = await dialog.boundingBox();
+  expect(narrowDialogBox).not.toBeNull();
+  expect(narrowDialogBox!.x).toBeGreaterThanOrEqual(15);
+  expect(narrowDialogBox!.x + narrowDialogBox!.width).toBeLessThanOrEqual(375);
+  expect(narrowDialogBox!.height).toBeLessThanOrEqual(644);
+  await page.setViewportSize({ width: 1280, height: 720 });
+
+  await page.getByLabel("Reviewer note").fill("Follow up on this result");
+  await page.getByRole("button", { name: "Save annotation" }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.locator(".terminal-inspector-actions").getByRole("button", { name: "annotate" }).click();
+  await expect(page.getByLabel("Reviewer note")).toHaveValue("Follow up on this result");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(stage.locator("body")).toHaveCSS("background-color", "rgb(41, 44, 51)");
+});
+
 test("Pi renderer follows its native TUI visual hierarchy", async ({ page }) => {
   await page.goto("/");
   await page.getByText("Read the greeting file.", { exact: true }).click();

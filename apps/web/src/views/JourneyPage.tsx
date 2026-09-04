@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { builtInStylePacks, rendererForSourceAgent } from "@agentjourney/builtin-renderers";
@@ -7,7 +7,6 @@ import type { RendererIntent } from "@agentjourney/plugin-sdk";
 import type { ReplayStreamMode } from "@agentjourney/activity-graph";
 import { projectStageDocument } from "@agentjourney/portability";
 import { api, saveDownload } from "../api.js";
-import { AnnotationDialog } from "../components/AnnotationDialog.js";
 import { CoveragePanel } from "../components/CoveragePanel.js";
 import { EvidenceInspector } from "../components/EvidenceInspector.js";
 import { OverlayEditor } from "../components/OverlayEditor.js";
@@ -17,6 +16,11 @@ import { StageFrame } from "../components/StageFrame.js";
 import { useReplay } from "../hooks/useReplay.js";
 import { shortId, sourceLabel } from "../source-brand.js";
 import "../terminal-journey.css";
+
+const AnnotationDialog = lazy(async () => {
+  const module = await import("../components/AnnotationDialog.js");
+  return { default: module.AnnotationDialog };
+});
 
 function sourceGlyph(sourceAgent: string): string {
   if (sourceAgent === "claude-code") return "✻";
@@ -833,11 +837,13 @@ export function JourneyPage(): React.ReactNode {
         />
       )}
       {annotationActivity && (
-        <AnnotationDialog
-          journey={detail}
-          activity={annotationActivity}
-          onClose={() => setAnnotationActivity(undefined)}
-        />
+        <Suspense fallback={<div className="modal-backdrop"><div className="loading">loading annotation editor…</div></div>}>
+          <AnnotationDialog
+            journey={detail}
+            activity={annotationActivity}
+            onClose={() => setAnnotationActivity(undefined)}
+          />
+        </Suspense>
       )}
       {showOverlay && (
         <OverlayEditor

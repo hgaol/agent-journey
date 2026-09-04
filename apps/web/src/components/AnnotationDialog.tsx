@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@astryxdesign/core/Button";
+import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
+import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { TextArea } from "@astryxdesign/core/TextArea";
 import type { ActivityDocument, JourneyDetailDocument } from "@agentjourney/contracts";
 import { api } from "../api.js";
+import "@astryxdesign/core/astryx.css";
+import "@astryxdesign/theme-neutral/theme.css";
+import "./AnnotationDialog.css";
 
 export function AnnotationDialog(props: {
   journey: JourneyDetailDocument;
@@ -19,17 +27,100 @@ export function AnnotationDialog(props: {
       props.onClose();
     }
   });
+  const requestClose = (isOpen: boolean): void => {
+    if (!isOpen && !save.isPending) props.onClose();
+  };
 
   return (
-    <div className="modal-backdrop" role="presentation">
-      <form className="small-dialog" onSubmit={(event) => { event.preventDefault(); save.mutate(); }}>
-        <header><div><p className="eyebrow">Evidence-anchored</p><h2>Review annotation</h2></div><button type="button" className="icon-button" onClick={props.onClose}>×</button></header>
-        <div className="annotation-activity"><span>{props.activity.kind}</span><p>{props.activity.text?.slice(0, 240) ?? props.activity.nativeName ?? props.activity.evidenceAnchor}</p></div>
-        <label className="checkbox-label"><input type="checkbox" checked={bookmarked} onChange={(event) => setBookmarked(event.target.checked)} /> Bookmark this Activity</label>
-        <label>Reviewer note<textarea value={note} onChange={(event) => setNote(event.target.value)} rows={6} placeholder="What matters here?" /></label>
-        {save.error && <div className="error-banner">{save.error.message}</div>}
-        <footer><button type="button" className="secondary-button" onClick={props.onClose}>Cancel</button><button className="primary-button" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save annotation"}</button></footer>
-      </form>
+    <div
+      className="agentjourney-astryx-scope"
+      data-astryx-theme="neutral"
+      data-theme="dark"
+    >
+      <Dialog
+        className="agentjourney-astryx-dialog"
+        isOpen
+        onOpenChange={requestClose}
+        purpose="form"
+        width={520}
+        maxHeight="92dvh"
+        padding={0}
+      >
+        <form
+          className="agentjourney-astryx-annotation-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            save.mutate();
+          }}
+        >
+          <Layout
+            height="auto"
+            header={(
+              <DialogHeader
+                title="Review annotation"
+                subtitle="Evidence-anchored"
+                {...(!save.isPending ? { onOpenChange: requestClose } : {})}
+              />
+            )}
+            content={(
+              <LayoutContent
+                className="agentjourney-astryx-annotation-content"
+                padding={4}
+                isScrollable
+              >
+                <div className="agentjourney-astryx-annotation-activity">
+                  <span>{props.activity.kind}</span>
+                  <p>{props.activity.text?.slice(0, 240) ?? props.activity.nativeName ?? props.activity.evidenceAnchor}</p>
+                </div>
+                <CheckboxInput
+                  label="Bookmark this Activity"
+                  value={bookmarked}
+                  onChange={setBookmarked}
+                  isDisabled={save.isPending}
+                  size="sm"
+                  width="100%"
+                />
+                <TextArea
+                  label="Reviewer note"
+                  value={note}
+                  onChange={setNote}
+                  rows={6}
+                  placeholder="What matters here?"
+                  isDisabled={save.isPending}
+                  size="sm"
+                  width="100%"
+                />
+                {save.error && (
+                  <div className="agentjourney-astryx-error" role="alert">
+                    {save.error.message}
+                  </div>
+                )}
+              </LayoutContent>
+            )}
+            footer={(
+              <LayoutFooter hasDivider>
+                <div className="agentjourney-astryx-annotation-actions">
+                  <Button
+                    label="Cancel"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => requestClose(false)}
+                    isDisabled={save.isPending}
+                  />
+                  <Button
+                    label="Save annotation"
+                    variant="primary"
+                    size="sm"
+                    type="submit"
+                    isLoading={save.isPending}
+                    isDisabled={save.isPending}
+                  />
+                </div>
+              </LayoutFooter>
+            )}
+          />
+        </form>
+      </Dialog>
     </div>
   );
 }
