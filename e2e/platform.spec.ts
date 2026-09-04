@@ -534,6 +534,9 @@ test("previews and downloads the same interactive source-native HTML export", as
   await expect(exportedStage.locator(".activity")).toHaveCount(12);
 
   await preview.locator("#prompt").selectOption("instant");
+  await preview.getByLabel("Replay playhead").fill("6");
+  await expect(exportedStage.locator(".activity")).toHaveCount(7);
+  await expect(preview.locator("#count")).toHaveText("7/12");
   await preview.getByRole("button", { name: "Replay" }).click();
   await expect(exportedStage.locator(".activity")).toHaveCount(1);
 
