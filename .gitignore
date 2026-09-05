@@ -1,0 +1,6 @@
+.agentjourney/
+apps/
+node_modules/
+packages/
+release/
+test-results/

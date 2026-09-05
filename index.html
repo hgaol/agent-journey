@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#090b0c">
+  <meta name="description" content="AgentJourney is a local-first forensic archive for reviewing and replaying Claude Code, Codex CLI, Pi, and GitHub Copilot CLI histories.">
+  <meta property="og:title" content="AgentJourney — revisit how the work unfolded">
+  <meta property="og:description" content="Preserve, find, review, replay, and export coding-agent histories without sending them to a cloud service.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://hgaol.github.io/agentjourney/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://hgaol.github.io/agentjourney/">
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; frame-src 'self'; connect-src 'none'; font-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>AgentJourney — local forensic replay for coding agents</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="AgentJourney home">
+      <span class="brand-mark" aria-hidden="true">AJ</span>
+      <span><strong>AgentJourney</strong><small>forensic replay platform</small></span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#why">Why</a>
+      <a href="#demo">Demo</a>
+      <a href="#workflow">How it works</a>
+      <a class="nav-github" href="https://github.com/hgaol/agentjourney">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero section-shell">
+      <div class="hero-copy reveal">
+        <p class="eyebrow"><span></span> Local evidence. Native replay.</p>
+        <h1>Revisit how the<br><em>work unfolded.</em></h1>
+        <p class="hero-lede">AgentJourney passively preserves coding-agent histories, then turns them into a searchable forensic archive with source-native Review, Replay, and export.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#demo">Try the live Replay</a>
+          <a class="button secondary" href="https://github.com/hgaol/agentjourney">Explore the source</a>
+        </div>
+        <div class="install-block" aria-label="Installation command">
+          <div><span class="status-dot"></span><span>first alpha command</span></div>
+          <code>npx --yes agentjourney@next</code>
+          <button type="button" data-copy="npx --yes agentjourney@next" aria-label="Copy installation command">Copy</button>
+        </div>
+        <p class="alpha-note">Alpha publishing is gated on license and registry approval. The command is the planned distribution interface.</p>
+      </div>
+
+      <div class="hero-visual reveal" aria-label="AgentJourney archive illustration">
+        <div class="terminal-window">
+          <div class="terminal-bar">
+            <span class="terminal-dots"><i></i><i></i><i></i></span>
+            <code>local@agentjourney · /workspace/atlas</code>
+            <span class="masked">MASKED</span>
+          </div>
+          <div class="terminal-grid">
+            <aside>
+              <small>THREADS</small>
+              <b><i class="thread-dot"></i> main <span>18</span></b>
+              <b><i></i> release audit <span>2</span></b>
+              <small>TURNS</small>
+              <b>◇ turn 1 <span>14</span></b>
+              <b>◇ turn 2 <span>4</span></b>
+            </aside>
+            <div class="terminal-copy">
+              <p class="prompt">Investigate why the packaged smoke test fails on Windows.</p>
+              <p class="thought">Tracing the failing capability…</p>
+              <p><strong class="tool">$</strong> <b>pnpm release:smoke</b></p>
+              <pre><span class="fail">Error</span>: Could not find FFmpeg executable
+Archive startup: <span class="ok">passed</span>
+QuickJS sandbox: <span class="ok">passed</span></pre>
+              <p><strong class="agent">◆</strong> The failure is isolated to <b>MP4 export</b>. Review and Replay remain available.</p>
+              <div class="composer"><i></i><span></span></div>
+            </div>
+          </div>
+          <div class="terminal-transport"><b>REVIEW</b><span>REPLAY</span><i></i><small>evidenced timestamp · source evidence</small></div>
+        </div>
+        <div class="evidence-chip"><span>sha256</span><b>Source Evidence preserved</b><small>byte-for-byte</small></div>
+      </div>
+    </section>
+
+    <section class="agent-strip section-shell" aria-label="Supported coding agents">
+      <span>Built for histories from</span>
+      <ul>
+        <li><i class="claude">✻</i> Claude Code</li>
+        <li><i class="codex">›_</i> Codex CLI</li>
+        <li><i class="pi">π</i> Pi</li>
+        <li><i class="copilot">◉</i> GitHub Copilot CLI</li>
+      </ul>
+    </section>
+
+    <section id="why" class="principles section-shell">
+      <header class="section-heading reveal">
+        <p class="eyebrow"><span></span> Why AgentJourney</p>
+        <h2>Agent work deserves<br>a durable record.</h2>
+        <p>Coding agents already persist rich histories. AgentJourney preserves that evidence before source formats drift, sessions disappear, or important decisions get buried.</p>
+      </header>
+      <div class="principle-grid">
+        <article class="feature-card reveal">
+          <span class="feature-index">01</span>
+          <div class="feature-icon evidence-icon" aria-hidden="true"><i></i><i></i><i></i></div>
+          <h3>Evidence first</h3>
+          <p>Exact Source Bundles stay immutable and byte-preserved. Canonical Activity can evolve without rewriting what the agent actually recorded.</p>
+          <small>Source Evidence ≠ interpretation</small>
+        </article>
+        <article class="feature-card reveal">
+          <span class="feature-index">02</span>
+          <div class="feature-icon replay-icon" aria-hidden="true"><i></i><i></i><i></i></div>
+          <h3>Replay, not reenactment</h3>
+          <p>Recorded timing and delivery traces stay evidenced. Simulated typing and streaming are optional, explicit, and visibly labeled.</p>
+          <small>No invented forensic fidelity</small>
+        </article>
+        <article class="feature-card reveal">
+          <span class="feature-index">03</span>
+          <div class="feature-icon local-icon" aria-hidden="true"><i></i></div>
+          <h3>Local custody</h3>
+          <p>No accounts, cloud storage, or telemetry. The archive, browser rendering, search, HTML, and MP4 export stay on your machine.</p>
+          <small>Loopback only · no agent control</small>
+        </article>
+      </div>
+    </section>
+
+    <section id="demo" class="demo-section">
+      <div class="section-shell">
+        <header class="demo-heading reveal">
+          <div>
+            <p class="eyebrow"><span></span> Actual exported runtime</p>
+            <h2>Try a real, read-only Replay.</h2>
+          </div>
+          <div class="demo-heading-copy">
+            <p>This frame is generated by AgentJourney’s interactive HTML exporter from synthetic Canonical Activity. It is the same source-native Stage and Replay transport used by a downloadable export—not a marketing animation.</p>
+            <a href="./demo/">Open full-page demo <span aria-hidden="true">↗</span></a>
+          </div>
+        </header>
+        <div class="demo-frame-shell reveal">
+          <div class="demo-frame-bar">
+            <div><i></i><span>SYNTHETIC JOURNEY</span></div>
+            <p><b>Tip:</b> choose Simulated TUI stream, press Replay, or drag the playhead.</p>
+            <button type="button" id="reset-demo">Reset demo</button>
+          </div>
+          <iframe id="live-demo" title="Interactive AgentJourney Replay demo" src="./demo/" sandbox="allow-scripts" loading="lazy" referrerpolicy="no-referrer"></iframe>
+        </div>
+        <p class="demo-disclaimer">Synthetic data only. The apparent composer is presentation—not a live prompt box—and cannot contact a coding agent.</p>
+      </div>
+    </section>
+
+    <section id="workflow" class="workflow section-shell">
+      <header class="section-heading compact reveal">
+        <p class="eyebrow"><span></span> A passive workflow</p>
+        <h2>From persisted history<br>to reviewable Journey.</h2>
+      </header>
+      <ol class="workflow-list">
+        <li class="reveal"><span>01</span><div><h3>Approve a Source Root</h3><p>Grant read-only discovery to an agent history location. Manual scanning is the default; AgentJourney never launches or wraps the agent.</p></div><code>~/.pi/agent/sessions</code></li>
+        <li class="reveal"><span>02</span><div><h3>Preserve exact evidence</h3><p>Changed sessions are committed atomically into an independent, content-addressed local archive with provenance and coverage.</p></div><code>Source Bundle · SHA-256</code></li>
+        <li class="reveal"><span>03</span><div><h3>Review the Activity Graph</h3><p>Search Journeys, inspect evidence, compare interpretations, follow tools and subagents, annotate findings, or replay evidenced timing.</p></div><code>Review → Replay → Export</code></li>
+      </ol>
+    </section>
+
+    <section class="capabilities section-shell">
+      <header class="section-heading compact reveal">
+        <p class="eyebrow"><span></span> One archive, many views</p>
+        <h2>Forensic depth without<br>flattening the source.</h2>
+      </header>
+      <div class="capability-grid">
+        <article class="reveal"><span>⌕</span><h3>Journey search</h3><p>Search Canonical Activity by phrase, source, kind, capability, Project, and date—with one result card per native session.</p></article>
+        <article class="reveal"><span>⌁</span><h3>Native TUI renderers</h3><p>Claude, Codex, Pi, and Copilot retain recognizable prompts, tools, reasoning treatment, palettes, and footer hierarchy.</p></article>
+        <article class="reveal"><span>◇</span><h3>Review overlays</h3><p>Projects, tags, bookmarks, and evidence-anchored notes remain separate from immutable Source Evidence.</p></article>
+        <article class="reveal"><span>↗</span><h3>Portable exports</h3><p>Lossless Journey Packages, offline interactive HTML, and local silent H.264 Replay video—redacted by default.</p></article>
+      </div>
+    </section>
+
+    <section class="privacy section-shell reveal">
+      <div>
+        <p class="eyebrow"><span></span> Intentionally local</p>
+        <h2>Your histories do not become our dataset.</h2>
+      </div>
+      <div class="privacy-grid">
+        <p><strong>0</strong><span>accounts</span></p>
+        <p><strong>0</strong><span>telemetry events</span></p>
+        <p><strong>0</strong><span>cloud uploads</span></p>
+      </div>
+      <ul>
+        <li><i></i> Bound to <code>127.0.0.1</code></li>
+        <li><i></i> Authenticated local browser session</li>
+        <li><i></i> Unencrypted archive, disclosed by design</li>
+        <li><i></i> Presentation redaction leaves evidence untouched</li>
+      </ul>
+    </section>
+
+    <section class="final-cta section-shell reveal">
+      <p class="eyebrow"><span></span> Preserve the work behind the answer</p>
+      <h2>Give agent history<br>a longer memory.</h2>
+      <p>AgentJourney is open source and preparing its first npm alpha. Follow the repository, inspect the design decisions, or run the platform from source today.</p>
+      <div class="hero-actions">
+        <a class="button primary" href="https://github.com/hgaol/agentjourney">View on GitHub</a>
+        <a class="button secondary" href="https://github.com/hgaol/agentjourney#development">Run from source</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer section-shell">
+    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">AJ</span><span><strong>AgentJourney</strong><small>local forensic replay</small></span></a>
+    <p>Passive capture. Exact evidence. Read-only replay.</p>
+    <nav aria-label="Footer navigation"><a href="./demo/">Demo</a><a href="https://github.com/hgaol/agentjourney">Source</a><a href="https://github.com/hgaol/agentjourney/issues">Issues</a></nav>
+    <small>© <span id="year">2026</span> AgentJourney contributors</small>
+  </footer>
+
+  <div class="copy-toast" id="copy-toast" role="status" aria-live="polite">Copied to clipboard</div>
+  <script src="./script.js" defer></script>
+</body>
+</html>
